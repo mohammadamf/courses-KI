@@ -1,4 +1,3 @@
-
 //
 // C++ program to play simple chess:
 // white king (WK) and white queen/rook (WQ) against black king (BK)
@@ -10,13 +9,22 @@
 //          [0|1]: 0 for white queen, 1 for white rook
 // Walter Kosters, January 22, 2019; w.a.kosters@liacs.leidenuniv.nl
 //
+// Modified as part of an assignment by David Kleingeld, feb 14, 2019;
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <cmath>
+#include <algorithm>    // std::min
+
 using namespace std;
 
 const int MAX = 30;
+const bool WILL_TAKE_QUEEN = false;
+const bool PROTECT_QUEEN = false;
+const bool PROTECT_KING = false;
+
+enum Player { play_random=0, play_simple=1, play_monte_carlo=2 };//Player
 
 class Board {
   public:
@@ -30,6 +38,7 @@ class Board {
     bool whoistomove;    // who is to move? (true: white)
     int countmoves;      // number of moves so far
     bool queenorrook;    // true: white queen; false: white rook
+    Player white_player; // random, simple or monte_carlo
     // member functions, see below for comments
     Board ( );
     Board (int somesize, bool qor);
@@ -45,8 +54,12 @@ class Board {
     int numberofwhitequeenmoves ( );
     int numberofwhitekingmoves ( );
     int randomblackmove ( );
+    int score_white_move (int WKx, int WKy, int WQx, int WQy);
     void randomwhitemove ( );
+    void simple_whitemove ( );
+    void monte_carlo_whitemove ( );
     void humanwhitemove ( );
+
 };//Board
 
 // get first non-enter
@@ -160,7 +173,7 @@ bool Board::canwhiterookreach (int i, int j) {
   return true;
 }//canwhiterookreach
 
-// is BK at (i,j) in check?
+// is BK at (i,j) in check? TODO is this what this function does?
 bool Board::incheck (int i, int j) {
   if ( queenorrook )
     return canwhitequeenreach (i,j);
@@ -226,11 +239,11 @@ void Board::randomwhitemove ( ) {
         if ( legalforwhiteking (xWK+i,yWK+j) ) {
           if ( move == 0 ) {
             xWK = xWK+i; yWK = yWK+j;
-	    whoistomove = ! whoistomove;
-	    countmoves++;
-	    return;
-	  }//if
-	  move--;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            return;
+          }//if
+          move--;
         }//if
   move -= numberK;
   for ( i = 1; i <= thesize; i++ )
@@ -238,11 +251,11 @@ void Board::randomwhitemove ( ) {
         if ( legalforwhitequeen (i,j) ) {
           if ( move == 0 ) {
             xWQ = i; yWQ = j;
-	    whoistomove = ! whoistomove;
-	    countmoves++;
-	    return;
-	  }//if
-	  move--;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            return;
+          }//if
+          move--;
         }//if
 }//Board::randomwhitemove
 
@@ -259,29 +272,32 @@ int Board::randomblackmove ( ) {
       return 1;
   }//if
 // optional: if BK can take WQ, do it ...
-// for ( i = -1; i <= 1; i++ )
-//   for ( j = -1; j <= 1; j++ )
-//     if ( legalforblackking (xBK+i,yBK+j) ) {
-//       if ( xBK+i == xWQ && yBK+j == yWQ ) {
-//         xBK = xBK+i; yBK = yBK+j;
-//	   queencaptured = true;
-//	   return 2;
-//	 }//if
-//     }//if
+  if (WILL_TAKE_QUEEN) {
+    for ( i = -1; i <= 1; i++ )
+     for ( j = -1; j <= 1; j++ )
+       if ( legalforblackking (xBK+i,yBK+j) ) {
+         if ( xBK+i == xWQ && yBK+j == yWQ ) {
+           xBK = xBK+i; yBK = yBK+j;
+             queencaptured = true;
+             return 2;
+           }//if
+       }//if
+    //cout<<"Queen taken"<<endl;
+  }
   move = rand ( ) % number;
   for ( i = -1; i <= 1; i++ )
     for ( j = -1; j <= 1; j++ )
       if ( legalforblackking (xBK+i,yBK+j) ) {
         if ( move == 0 ) {
           xBK = xBK+i; yBK = yBK+j;
-	  if ( xBK == xWQ && yBK == yWQ ) {
-	    queencaptured = true;
-	    return 2;
-	  }//if
-	  whoistomove = ! whoistomove;
-	  return 3;
-	}//if
-	move--;
+          if ( xBK == xWQ && yBK == yWQ ) {
+            queencaptured = true;
+            return 2;
+          }//if
+          whoistomove = ! whoistomove;
+          return 3;
+        }//if
+        move--;
       }//if
   return 999;
 }//Board::randomblackmove
@@ -302,7 +318,7 @@ void Board::humanwhitemove ( ) {
       j = getfirstchar ( ) - '0';
       if ( legalforwhitequeen (i,j) ) {
         xWQ = i; yWQ = j;
-	OK = true;
+        OK = true;
       }//if
       else {
         cout << "Illegal queen move ..." << endl;
@@ -315,7 +331,7 @@ void Board::humanwhitemove ( ) {
       j = getfirstchar ( ) - '0';
       if ( legalforwhiteking (i,j) ) {
         xWK = i; yWK = j;
-	OK = true;
+        OK = true;
       }//if
       else {
         cout << "Illegal king move ..." << endl;
@@ -348,16 +364,163 @@ void Board::print ( ) {
   A[xWQ][yWQ] = '.';
 }//Board::print
 
+bool neighboars (int xB, int yB, int xW, int yW) {
+  return (abs(xB - xW) <= 1 && abs(yB - yW) <= 1);
+}//neighboars
+
+int distance_from_line_of_sight (int xB, int yB, int xW, int yW) {
+  int dx = xB-xW;
+  int dy = yB-yW;
+  //the closer the difference between dx and dy comes to 0 the closer we
+  //are to line of sight between the pieces
+  
+  //score diagonal, closer to diagonal = lower score
+  int diag_score = abs(abs(dx)-abs(dy));
+  //score straight, closer to straight line = lower score
+  int vert_horizontal_score = abs(min(dx,dy));
+  
+  return min(diag_score, vert_horizontal_score);
+}
+
+int distance(int xB, int yB, int xW, int yW) {
+  int dx = xB-xW;
+  int dy = yB-yW;
+  
+  return sqrt(dx*dx+dy*dy);
+}
+
+int Board::score_white_move (int WKx, int WKy, int WQx, int WQy) {
+  int score = 3;
+  
+//  //taking the black piece is impossible, dont try
+  if ((WKx == xBK && WKy == yBK) || (WQx == xBK || WQy == yBK))
+    return 0;
+  
+  // possibly having the king taken is really bad 
+  if (PROTECT_KING) {
+    if (neighboars(xBK,yBK, WKx,WKy)){
+      //cout << "king could be taken" << endl;
+      return 0;
+    }
+  }
+  if (PROTECT_QUEEN) {
+    if (neighboars(xBK,yBK, WQx,WQy)){ //queen can be taken
+      if (not neighboars(WKx,WKy, WQx,WQy)){ //queen not coverd
+        return 0; //will lose queen, bad!
+      }
+    }
+  }
+  
+  if (WILL_TAKE_QUEEN) {
+    if (neighboars(xBK,yBK, WQx,WQy)){ //queen can be taken next turn
+      return 1;
+    }
+  }
+  
+  //having close to line of sight is great
+  score += 1*1/float(1+distance_from_line_of_sight(xBK,yBK, WQx, WQy));
+  
+  //being close is good
+  score += 1*1/float(1+distance(xBK,yBK, WQx, WQy)); //how close is the queen
+  
+  //having the king close is more importand then the queen as line of sight is
+  //not enough for the king
+  score += 5*1/float(1+distance(xBK,yBK, WKx, WKy)); //how close is the king
+  
+  return score;
+}
+
+// do a simple move for White
+void Board::simple_whitemove ( ) {
+  //cout << "move" << endl;
+  countmoves++;
+  whoistomove = ! whoistomove;
+  
+  int highest_score = 0;
+  //try all legal moves for the king and queen
+  for ( int i = -1; i <= 1; i++ ) {
+    for ( int j = -1; j <= 1; j++ ) {
+      if ( legalforwhiteking (xWK+i,yWK+j) ) {
+        //cout << "hi" << endl;
+        //try all possible queen moves and score the combination
+        for ( int k = 1; k <= thesize; k++ ) {
+          for ( int l = 1; l <= thesize; l++ ) {
+            if ( legalforwhitequeen (k,l) ) {
+              int score = score_white_move(xWK+i,yWK+j,xWQ+k,yWQ+l);
+              //cout << "simple move has score: " << score << endl;
+              if (score > highest_score) {
+                highest_score = score;
+                xWK = xWK+i; yWK = yWK+j;
+                xWQ = k; yWQ = l;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}//Board::simple_whitemove
+
+// do a random move for White
+void Board::monte_carlo_whitemove ( ) {
+  int move, i, j;
+  int numberK = numberofwhitekingmoves ( );
+  int numberQ = numberofwhitequeenmoves ( );
+  move = rand ( ) % ( numberK + numberQ );
+  if ( move < numberK )
+    for ( i = -1; i <= 1; i++ )
+      for ( j = -1; j <= 1; j++ )
+        if ( legalforwhiteking (xWK+i,yWK+j) ) {
+          if ( move == 0 ) {
+            xWK = xWK+i; yWK = yWK+j;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            return;
+          }//if
+          move--;
+        }//if
+  move -= numberK;
+  for ( i = 1; i <= thesize; i++ )
+    for ( j = 1; j <= thesize; j++ )
+        if ( legalforwhitequeen (i,j) ) {
+          if ( move == 0 ) {
+            xWQ = i; yWQ = j;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            return;
+          }//if
+          move--;
+        }//if
+}//Board::randomwhitemove
+
 // play one game
 // return 0 if checkmate, 1 if stalemate, 2 if simple tie,
 // 3 if stopped
-int playagame (int somesize, int maxgamelength, bool queenorrook) {
+int playagame (int somesize, int maxgamelength, Player white_player, bool queenorrook) {
   Board board (somesize,queenorrook);
   int themove = 3;
-  while ( themove == 3 && board.countmoves < maxgamelength ) {
-    board.randomwhitemove ( );
-    themove = board.randomblackmove ( ); 
-  }//while
+  switch(white_player) {
+    case play_random:
+      //cout << "play_random" << endl;
+      while ( themove == 3 && board.countmoves < maxgamelength ) {
+        board.randomwhitemove ( );
+        themove = board.randomblackmove ( ); 
+      }//while
+      break;
+    case play_simple:
+      while ( themove == 3 && board.countmoves < maxgamelength ) {
+        board.simple_whitemove ( );
+        themove = board.randomblackmove ( ); 
+      }//while
+      break;
+    case play_monte_carlo:
+      while ( themove == 3 && board.countmoves < maxgamelength ) {
+        board.monte_carlo_whitemove ( );
+        themove = board.randomblackmove ( ); 
+      }//while
+      break;
+  }
+
   return themove;
 }//playagame
 
@@ -367,6 +530,7 @@ int main (int argc, char* argv[ ]) {
   int somesize;
   int simulations;
   int maxgamelength;
+  Player white_player;
   bool queenorrook;
   if ( argc >= 5 ) {
     somesize = atoi (argv[1]);
@@ -376,20 +540,24 @@ int main (int argc, char* argv[ ]) {
       somesize = 4;
     simulations = atoi (argv[2]);
     maxgamelength = atoi (argv[3]);
-    queenorrook = ( atoi (argv[4]) == 0 );
+    white_player = static_cast<Player>(atoi (argv[4] ));
+    if (white_player > 2)
+      white_player = Player::play_random;
+    queenorrook = ( atoi (argv[5]) == 0 );
   }//if
   else {
     cout << "Rather use " << argv[0]
-         << " <thesize> <simulations> <maxgamelength> [0|1]" << endl;
+         << " <thesize> <simulations> <maxgamelength> [0|1|2] [0|1]" << endl;
     somesize = 8;
     simulations = 1000;
     maxgamelength = 200;
+    white_player = Player::play_random;
     queenorrook = true;
   }//else
   srand (time(NULL));  // seed random generator
   stats[0] = stats[1] = stats[2] = stats[3] = 0;
   for ( i = 0; i < simulations; i++ )
-     stats[playagame (somesize,maxgamelength,queenorrook)]++;
+     stats[playagame (somesize,maxgamelength,white_player,queenorrook)]++;
   cout << "Board size:      " << somesize << endl
        << "Max game length: " << maxgamelength << endl
        << "Wins:            " << stats[0] << endl
