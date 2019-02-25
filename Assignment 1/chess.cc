@@ -20,7 +20,7 @@
 using namespace std;
 
 const int MAX = 30;
-const bool WILL_TAKE_QUEEN = false;
+const bool WILL_TAKE_QUEEN = true;
 const bool PROTECT_QUEEN = false;
 const bool PROTECT_KING = false;
 
@@ -64,7 +64,6 @@ class Board {
     int numberofwhitequeenmoves ( );
     int numberofwhitekingmoves ( );
     int randomblackmove ( );
-    //int score_white_move ();
 
     int score_white_king_move ();
     int score_white_queen_move ();
@@ -427,8 +426,14 @@ int Board::score_white_king_move () {
   score += 10*1/float(1+distance(xBK,yBK, xWK, yWK)); //how close is the queen
   score += 10*1/float(1+distance(xBK,yBK, xWQ, yWQ)); //how close is the queen
 
+  score += 15*incheck (xBK,yBK);
+
+  score += 2*numberofwhitequeenmoves ( );
+  score += 2*numberofwhitekingmoves ( );
+
   //having close to line of sight is great
   //score += 10*1/float(1+distance_from_line_of_sight(xBK,yBK, xWK, yWK));
+  //score += 10*1/float(1+distance_from_line_of_sight(xBK,yBK, xWQ, yWQ));
 
   return score;
 }
@@ -462,7 +467,13 @@ int Board::score_white_queen_move () {
   score += 10*1/float(1+distance(xBK,yBK, xWQ, yWQ)); //how close is the queen
   score += 10*1/float(1+distance(xBK,yBK, xWK, yWK)); //how close is the king
 
+  score += 15*incheck (xBK,yBK);
+
+  score += 2*numberofwhitequeenmoves ( );
+  score += 2*numberofwhitekingmoves ( );
+
   //having close to line of sight is great
+  //score += 10*1/float(1+distance_from_line_of_sight(xBK,yBK, xWK, yWK));
   //score += 10*1/float(1+distance_from_line_of_sight(xBK,yBK, xWQ, yWQ));
   
   return score;
