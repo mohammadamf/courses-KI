@@ -23,6 +23,7 @@ const int MAX = 30;
 const bool WILL_TAKE_QUEEN = true;
 const bool PROTECT_QUEEN = false;
 const bool PROTECT_KING = false;
+#define DISABLE_PRINT //increases performence as array is no longer copied
 
 enum Player { play_random=0, play_simple=1, play_monte_carlo=2 };//Player
 
@@ -38,8 +39,11 @@ struct WhiteMove {
 
 class Board {
   public:
-    char A[MAX][MAX];    // game board (pretty useless)
-                         // top left is (1,1) = (row,column)
+    #ifndef DISABLE_PRINT
+    void humanwhitemove ( );
+    char A[MAX][MAX];    // game board (pretty useless) top left is (1,1) = (row,column)
+    void print ( );
+    #endif
     int thesize;         // height = width of game board
     int xBK, yBK;        // position of black king
     int xWK, yWK;        // position of white king
@@ -52,7 +56,6 @@ class Board {
     // member functions, see below for comments
     Board ( );
     Board (int somesize, bool qor);
-    void print ( );
     bool legalforblackking (int i, int j);
     bool legalforwhiteking (int i, int j);
     bool canwhitequeenreach (int i, int j);
@@ -73,7 +76,6 @@ class Board {
     void monte_carlo_whitemove (int max_monte_carlo_depth);
 
     int simulate_game(int max_monte_carlo_depth);
-    void humanwhitemove ( );
 
 };//Board
 
@@ -94,6 +96,7 @@ Board::Board ( ) {
 Board::Board (int somesize, bool qor) {
   thesize = somesize;
   queenorrook = qor;
+#ifndef DISABLE_PRINT
   int i, j;
   for ( i = 0; i < MAX; i++ )
     for ( j = 0; j < MAX; j++ )
@@ -101,6 +104,8 @@ Board::Board (int somesize, bool qor) {
         A[i][j] = '.';
       else
         A[i][j] = 'O'; // outside board
+#endif
+
   xWK = rand ( ) % thesize + 1;
   yWK = rand ( ) % thesize + 1;
   do {
@@ -317,6 +322,7 @@ int Board::randomblackmove ( ) {
   return 999;
 }//Board::randomblackmove
 
+#ifndef DISABLE_PRINT
 // do a move for White: human player
 void Board::humanwhitemove ( ) {
   char choice;
@@ -378,6 +384,7 @@ void Board::print ( ) {
   A[xWK][yWK] = '.';
   A[xWQ][yWQ] = '.';
 }//Board::print
+#endif
 
 bool neighboars (int xB, int yB, int xW, int yW) {
   return (abs(xB - xW) <= 1 && abs(yB - yW) <= 1);
@@ -528,7 +535,7 @@ void Board::simple_whitemove ( ) {
 }//Board::simple_whitemove
 
 int Board::simulate_game(int max_monte_carlo_depth) {
-    int themove = 3; //0 if checkmate, 1 if stalemate, 2 if simple tie,
+    int themove = randomblackmove ( ); //0 if checkmate, 1 if stalemate, 2 if simple tie,
     while ( themove == 3 && countmoves < max_monte_carlo_depth ) {
         randomwhitemove ( );
         themove = randomblackmove ( );
@@ -548,18 +555,17 @@ void Board::monte_carlo_whitemove(int max_monte_carlo_depth) {
   for ( int i = -1; i <= 1; i++ ) {
     for ( int j = -1; j <= 1; j++ ) {
       if ( legalforwhiteking (xWK+i,yWK+j) ) {
+        int score = 0;
         for ( int x = 0; x <= 1000; x++){
           Board copied_board = *this; copied_board.countmoves = 0;
           copied_board.xWK = xWK+i; copied_board.yWK = yWK+j;
           int themove = copied_board.simulate_game(max_monte_carlo_depth);
-          //int score2 = copied_board.score_white_king_move();
-          int score = max_monte_carlo_depth- copied_board.countmoves;
-
-          if (themove == 0) score += max_monte_carlo_depth;
-          if (score > king_move.score) {
-            king_move.score = score;
-            king_move.x = xWK+i; king_move.y = yWK+j;
-          }
+          score += max_monte_carlo_depth- copied_board.countmoves;
+          if (themove == 0) score += 1000;
+        }
+        if (score > king_move.score) {
+          king_move.score = score;
+          king_move.x = xWK+i; king_move.y = yWK+j;
         }
       }
     }
@@ -569,25 +575,25 @@ void Board::monte_carlo_whitemove(int max_monte_carlo_depth) {
     for ( int l = 1; l <= thesize; l++ ) {
       if ( legalforwhitequeen (k,l) ) {
         //check if queen wont be next to the king
-        //if (!neighboars(xBK,yBK, k, l)){
+        if (!neighboars(xBK,yBK, k, l)){
+          int score = 0;
           for ( int x = 0; x <= 1000; x++){
             Board copied_board = *this; copied_board.countmoves = 0;
             copied_board.xWQ = k; copied_board.yWQ = l;
             int themove = copied_board.simulate_game(max_monte_carlo_depth);
-            //int score2 = copied_board.score_white_queen_move();
-            int score = max_monte_carlo_depth- copied_board.countmoves;
-
-            if (themove == 0) {score += max_monte_carlo_depth;}
-            if (score > queen_move.score) {
-              queen_move.score = score;
-              queen_move.x = k; queen_move.y = l;
-            }
+            score += max_monte_carlo_depth- copied_board.countmoves;
+            if (themove == 0) score += 1000;
           }
-        //}
+          if (score > queen_move.score) {
+            queen_move.score = score;
+            queen_move.x = k; queen_move.y = l;
+          }
+        }
       }
     }
   }
   //apply the best move to the current board
+  cout << king_move.score << endl;
   if (king_move.score >= queen_move.score) {
     xWK = king_move.x; yWK = king_move.y;
   } else {
