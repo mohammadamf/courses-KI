@@ -16,14 +16,17 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>    // std::min
+#include <vector>
+#include <fstream>
 
 using namespace std;
 
 const int MAX = 30;
-const bool WILL_TAKE_QUEEN = true;
+const bool WILL_TAKE_QUEEN = false;
 const bool PROTECT_QUEEN = false;
 const bool PROTECT_KING = false;
 #define DISABLE_PRINT //increases performence as array is no longer copied
+#define EXTENDED_STATS
 
 enum Player { play_random=0, play_simple=1, play_monte_carlo=2 };//Player
 
@@ -36,6 +39,29 @@ struct WhiteMove {
         score = 0;
     }
 };
+
+#ifdef EXTENDED_STATS
+struct GameStats {
+    std::vector<int> score;
+    std::vector<int> distanceWQ;
+    std::vector<int> distanceWK;
+    int numb_moves;
+    int the_move;
+    GameStats(){
+        numb_moves = 0;
+    }
+    void write_game_to_file(ofstream &file){
+        file << numb_moves;
+        file << "," << the_move;
+        for(auto const& value: score) file << "," << value;
+        for(auto const& value: distanceWQ) file << "," << value;
+        for(auto const& value: distanceWK) file << "," << value;
+        file << "\n";
+    }
+};
+
+#endif
+
 
 class Board {
   public:
@@ -72,8 +98,15 @@ class Board {
     int score_white_queen_move ();
 
     void randomwhitemove ( );
+    #ifdef EXTENDED_STATS
+    const void geather_stats ( GameStats &stats);
+    void scored_randomwhitemove ( GameStats &stats);
+    void simple_whitemove ( GameStats &stats);
+    void monte_carlo_whitemove (int max_monte_carlo_depth, GameStats &stats);
+    #else
     void simple_whitemove ( );
     void monte_carlo_whitemove (int max_monte_carlo_depth);
+    #endif
 
     int simulate_game(int max_monte_carlo_depth);
 
@@ -488,7 +521,11 @@ int Board::score_white_queen_move () {
 
 
 // do a simple move for White
+#ifdef EXTENDED_STATS
+void Board::simple_whitemove ( GameStats &stats) {
+#else
 void Board::simple_whitemove ( ) {
+#endif
   //cout << "move" << endl;
   countmoves++;
   whoistomove = ! whoistomove;
@@ -532,6 +569,9 @@ void Board::simple_whitemove ( ) {
   } else {
     xWQ = queen_move.x; yWQ = queen_move.y;
   }
+  #ifdef EXTENDED_STATS
+  geather_stats(stats);
+  #endif
 }//Board::simple_whitemove
 
 int Board::simulate_game(int max_monte_carlo_depth) {
@@ -544,7 +584,11 @@ int Board::simulate_game(int max_monte_carlo_depth) {
 }
 
 // do a random move for White
+#ifdef EXTENDED_STATS
+void Board::monte_carlo_whitemove(int max_monte_carlo_depth, GameStats &stats) {
+#else
 void Board::monte_carlo_whitemove(int max_monte_carlo_depth) {
+#endif
   countmoves++;
   whoistomove = ! whoistomove;
 
@@ -599,12 +643,15 @@ void Board::monte_carlo_whitemove(int max_monte_carlo_depth) {
   } else {
     xWQ = queen_move.x; yWQ = queen_move.y;
   }
-
+  #ifdef EXTENDED_STATS
+  geather_stats(stats);
+  #endif
 }//Board::randomwhitemove
 
 // play one game
 // return 0 if checkmate, 1 if stalemate, 2 if simple tie,
 // 3 if stopped
+#ifndef EXTENDED_STATS
 int playagame (int somesize, int maxgamelength, Player white_player, bool queenorrook) {
   Board board (somesize,queenorrook);
   int themove = 3;
@@ -675,4 +722,169 @@ int main (int argc, char* argv[ ]) {
        << "Total:           " << simulations << endl;
   return 0;
 }//main
+#endif
+
+#ifdef EXTENDED_STATS
+
+const void Board::geather_stats( GameStats &stats) {
+
+  int score = 0;
+  //minimise number of black moves
+  score += 20*1/float(1+numberofblackmoves() );
+
+  //being close is good
+  score += 10*1/float(1+distance(xBK,yBK, xWK, yWK)); //how close is the queen
+  score += 10*1/float(1+distance(xBK,yBK, xWQ, yWQ)); //how close is the queen
+
+  score += 15*incheck (xBK,yBK);
+
+  score += 2*numberofwhitequeenmoves ( );
+  score += 2*numberofwhitekingmoves ( );
+
+  stats.distanceWQ.push_back(distance(xBK,yBK, xWQ, yWQ));
+  stats.distanceWK.push_back(distance(xBK,yBK, xWK, yWK));
+  stats.score.push_back(score);
+}
+
+// do a random move for White
+void Board::scored_randomwhitemove ( GameStats &stats) {
+  int move, i, j;
+  int numberK = numberofwhitekingmoves ( );
+  int numberQ = numberofwhitequeenmoves ( );
+  move = rand ( ) % ( numberK + numberQ );
+  if ( move < numberK )
+    for ( i = -1; i <= 1; i++ )
+      for ( j = -1; j <= 1; j++ )
+        if ( legalforwhiteking (xWK+i,yWK+j) ) {
+          if ( move == 0 ) {
+            xWK = xWK+i; yWK = yWK+j;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            geather_stats(stats);
+            return;
+          }//if
+          move--;
+        }//if
+  move -= numberK;
+  for ( i = 1; i <= thesize; i++ )
+    for ( j = 1; j <= thesize; j++ )
+        if ( legalforwhitequeen (i,j) ) {
+          if ( move == 0 ) {
+            xWQ = i; yWQ = j;
+            whoistomove = ! whoistomove;
+            countmoves++;
+            geather_stats(stats);
+            return;
+          }//if
+          move--;
+        }//if
+}//Board::randomwhitemove
+
+void geather_random(int somesize, int maxgamelength, bool queenorrook, int simulations, ofstream &file, int stats[] ){
+    for (int i = 0; i < simulations; i++ ){
+        GameStats game_stats;
+        Board board (somesize,queenorrook);
+        int themove = 3;
+        while ( themove == 3 && board.countmoves < maxgamelength ) {
+            board.scored_randomwhitemove (game_stats );
+            themove = board.randomblackmove ( );
+        }//while
+        stats[themove]++;
+        game_stats.the_move = themove;
+        game_stats.numb_moves = board.countmoves;
+        game_stats.write_game_to_file(file);
+    }
+}
+void geather_simple(int somesize, int maxgamelength, bool queenorrook, int simulations, ofstream &file, int stats[] ){
+    for (int i = 0; i < simulations; i++ ){
+        GameStats game_stats;
+        Board board (somesize,queenorrook);
+        int themove = 3;
+        while ( themove == 3 && board.countmoves < maxgamelength ) {
+            board.simple_whitemove (game_stats );
+            themove = board.randomblackmove ( );
+        }//while
+        stats[themove]++;
+        game_stats.the_move = themove;
+        game_stats.numb_moves = board.countmoves;
+        game_stats.write_game_to_file(file);
+    }
+}
+void geather_monte_carlo(int somesize, int maxgamelength, bool queenorrook, int simulations, ofstream &file, int stats[] ){
+    for (int i = 0; i < simulations; i++ ){
+        GameStats game_stats;
+        Board board (somesize,queenorrook);
+        int themove = 3;
+        while ( themove == 3 && board.countmoves < maxgamelength ) {
+            board.monte_carlo_whitemove (200, game_stats );
+            themove = board.randomblackmove ( );
+        }//while
+        stats[themove]++;
+        game_stats.the_move = themove;
+        game_stats.numb_moves = board.countmoves;
+        game_stats.write_game_to_file(file);
+        cout << "hihi " << themove << endl;
+    }
+}
+
+int main (int argc, char* argv[ ]) {
+  int stats[4];
+  int somesize;
+  int simulations;
+  int maxgamelength;
+  Player white_player;
+  bool queenorrook;
+  if ( argc >= 5 ) {
+    somesize = atoi (argv[1]);
+    if ( somesize > MAX - 2 )
+      somesize = MAX - 2;
+    if ( somesize <= 3 )
+      somesize = 4;
+    simulations = atoi (argv[2]);
+    maxgamelength = atoi (argv[3]);
+    white_player = static_cast<Player>(atoi (argv[4] ));
+    if (white_player > 2)
+      white_player = Player::play_random;
+    queenorrook = ( atoi (argv[5]) == 0 );
+  }//if
+  else {
+    cout << "Rather use " << argv[0]
+         << " <thesize> <simulations> <maxgamelength> [0|1|2] [0|1]" << endl;
+    somesize = 8;
+    simulations = 1000;
+    maxgamelength = 200;
+    white_player = Player::play_random;
+    queenorrook = true;
+  }//else
+  srand (time(NULL));  // seed random generator
+
+  stats[0] = stats[1] = stats[2] = stats[3] = 0;
+  ofstream file;
+  switch(white_player) {
+    case play_random:
+      file.open("random_stats.csv",  std::ofstream::out | std::ofstream::app);
+      geather_random(somesize, maxgamelength, queenorrook, simulations, file, stats);
+      break;
+    case play_simple:
+      file.open("simple_stats.csv",  std::ofstream::out | std::ofstream::app);
+      geather_simple(somesize, maxgamelength, queenorrook, simulations, file, stats);
+      break;
+    case play_monte_carlo:
+      file.open("monte_carlo_stats.csv",  std::ofstream::out | std::ofstream::app);
+      geather_monte_carlo(somesize, maxgamelength, queenorrook, simulations, file, stats);
+  }
+  file.close();
+
+  cout << "Board size:      " << somesize << endl
+       << "Max game length: " << maxgamelength << endl
+       << "Wins:            " << stats[0] << endl
+       << "Stalemates:      " << stats[1] << endl
+       << "Simple ties:     " << stats[2] << endl
+       << "Stopped:         " << stats[3] << endl
+       << "Total:           " << simulations << endl;
+
+  return 0;
+}//main
+#endif
+
 

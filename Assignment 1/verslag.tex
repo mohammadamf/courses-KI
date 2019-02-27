@@ -21,6 +21,7 @@
 \usepackage[english,dutch]{babel}
 
 \usepackage{graphicx}
+%\usepackage{hyperref}
 
 \usepackage{listings}
 % Er zijn talloze parameters ...
@@ -43,41 +44,52 @@
 
 \section{Inleiding}
 
-Dit is de eerste programmeeropdracht voor het college KI \footnote{zie ook wel: \url{http://liacs.leidenuniv.nl/~kosterswa/AI/}}. Hier schrijven we een simpel programma dat het laatste stuk van het spel schaken zo goed mogelijk probeert te spelen. We nemen aan dat er aan het eind van het spel $1$ witte dame, $1$ witte koning en $1$ zwarte koning over zijn. Dit kan op 3 manieren eindigen: schaakmat, pat stelling \footnote{ookwel stalemate in het engels} of het spel gaat eeuwig door. Dit laatste gebeurt als de witte koningin gevangen is. Er zijn strategieen om dit zo snel mogelijk te doen \footnote{zie ook wel: \url{https://www.schaakzone.nl/eindspel/matzetten-toren-koning.php}. Hier proberen we zonder specifieke voorkennis methodisch en systematisch dit probleem op te lossen.
+Dit is de eerste programmeeropdracht voor het college KI \footnote{zie ook wel: \url{http://liacs.leidenuniv.nl/~kosterswa/AI/}}. Hier schrijven we een simpel programma dat het laatste stuk van het spel schaken zo goed mogelijk probeert te spelen. We nemen aan dat er aan het eind van het spel $1$ witte dame, $1$ witte koning en $1$ zwarte koning over zijn. Dit kan op 3 manieren eindigen: schaakmat, pat stelling \footnote{ookwel stalemate in het engels} of het spel gaat eeuwig door. Dit laatste gebeurt als de witte koningin gevangen is. Er zijn strategieen om dit zo snel mogelijk te doen \footnote{zie ook wel: \url{https://www.schaakzone.nl/eindspel/matzetten-toren-koning.php}}. Hier proberen we zonder specifieke voorkennis methodisch en systematisch dit probleem op te lossen.
 
 \section{Theorie}
 
-We willen hier dus een rationele agent schrijven. De meest voor de hand liggende oplossing voor een rationele agent is om alle mogelijkheden af te wegen en uit te rekenen. Alle mogelijke zetten voor ons schaakprogramma is echter onmogelijk. Een redelijke schatting is $\propto$ 30 \cite{Shannon:1988} mogelijke zetten en een partij lengte van $\propto$ zetten \ref{kosters:lecture2:sheet9}. Dit geeft ongeveer $30^100 \propto 5x10^{147}$ regels voor de tabel. Voor het complete schaakspel word dit alleen maar erger. Vanuit de beginpositie zijn er alleen al $10^120$ variaties \cite{Shannon:1988}.
+We willen hier dus een rationele agent schrijven. De meest voor de hand liggende oplossing voor een rationele agent is om alle mogelijkheden af te wegen en uit te rekenen. Alle mogelijke zetten voor ons schaakprogramma is echter onmogelijk. Een redelijke schatting is $\approx$ 30 \cite{Shannon:1988} mogelijke zetten en een partij lengte van $\approx$ zetten \cite{kosters:lecture2:sheet9}. Dit geeft ongeveer $30^{100} \approx 5x10^{147}$ regels voor de tabel. Voor het complete schaakspel word dit alleen maar erger. Vanuit de beginpositie zijn er alleen al $10^{120}$ variaties \cite{Shannon:1988}.
 
-schaakprogramma’s  van  Shannon  en  Turing
+Shannon stelt een chess program voor dat posities op het bord een score geeft en daar mee de zetten selecteerd. Hier proberen we iets soort gelijks. Schaak is een volledig observeerbaar, deterministisch, sequenteel en discreet probleem. Immers het hele bord kan overzien worden, en komen geen kansen voor, de spelers zijn om de beurt aan zet en er zijn een gelimiteerd aantal zetten mogelijk. Dit betekend dat een doel gebaseerde agent, die mogelijke acties aan een bestaand model weegt, een goede aanpak kan zijn. Zoals Shannon voorstelt.
 
-voor een simpele schaak agent met behulp van opzoektabel $35^100$ zetten nodig, kosters slide 2
+\section{Methode}
 
-Schaak agent: obsbaar,deterministisch,niet episodisch, discreet
+We schrijven 2 agenten. Als eerst schrijven doel gerichte agent die alle mogelijke zetten een score geeft en die met de hoogste score uitvoert. Zetten waarbij de koningin naast de zwarte koning komt te staan vermijden we, immers dan raken we de koningin snel kwijt, door ze een score van 1 te geven. Voor alle andere zetten berekenen we de score als volgt:
 
-doel gebaseerde agent, weegt mogelijke acties aan een bestaand model
+\begin{equation}
+  S = 20*\frac{1}{1+N_b}
+      + 10*\frac{1}{1+D_q}
+      + 10*\frac{1}{1+D_k}
+      + 2*N_{w queen}
+      + 2*N_{w king}
+\end{equation}
 
-\section{Aanpak}
+Waar $N_b$: het aantal mogelijke zetten voor de zwarte koning, $D_q$: de afstand van de witte dame tot de zwarte koning, $D_k$:, de afstand van de witte koning tot de zwate, $N_{w queen}$: number of moves for the white queen, $N_{w king}$: number of moves for the white king.
 
-We gaan als volgt te werk, zie ook Figuur~\ref{marx}.
+Als de zwarte koning schaak staat voegen we 15 toe aan de score.
+
+Als tweede schrijven we een agent die gebruik maakt van de monte carlo simulatie. Hiervoor gaan we weer alle mogelijke zetten langs. We doen elke mogelijke zet en simuleren het verloop van het spel 1000 keer waarbij beide partijen na de zet random vervolgzetten doen zijn. De eindsituatie van al deze simulaties krijgt dan een score. Deze word anders bepaald dan hierboven namelijk:
+
+\begin{equation}
+  S = 1000*U + \Sigma_{i=0}^{1000} (N_{i})
+\end{equation}
+Hier is $N_i$ het aantal zetten dat de gesimuleerde partij korter was dan het maximum. U is het aantal partij-en waarbij de witte speler won.
+
+\section{Implementatie}
+Beide agenten zijn geimplementeerd in C++ als uitbreiding op de gegeven \href{http://liacs.leidenuniv.nl/~kosterswa/AI/chess.cc}{\underline{skeletcode}}. Er zijn ook een aantal kleine wijzigingen gemaakt om het verkrijgen van statistiek te vergemakkelijken. Zo was er in de orginele skeletcode een visuele weergave van het speelbord. Deze is nu compile time uit te zetten zodat deze niet telkens gecopieerd word in de monte carlo simulatie.
 
 \bigskip
 
-\begin{figure}[!htbp]
-\begin{center}
-\includegraphics[scale=1.20]{marxbrothers2}
-\end{center}
-\caption{Zeppo, Harpo, Groucho en Chico Marx [\href{http://www.marx-brothers.org}{\underline{www.marxbrothers.org}}]}\label{marx}
-\end{figure}
+% \begin{figure}[!htbp]
+% \begin{center}
+% \includegraphics[scale=1.20]{marxbrothers2}
+% \end{center}
+% \caption{Zeppo, Harpo, Groucho en Chico Marx [\href{http://www.marx-brothers.org}{\underline{www.marxbrothers.org}}]}\label{marx}
+% \end{figure}
 
 \noindent
 Zoals Groucho al zei:
 ``Time flies like an arrow; fruit flies like a banana''. (Sommigen vinden trouwens dat de punt voor de " moet staan.)
-
-\section{Implementatie}
-
-Er is gekozen voor de programmeertaal C$\stackrel{++}{}$.
-Verder \ldots\ houden we het kort.
 
 \section{Experimenten}
 
@@ -100,13 +112,8 @@ Leuk onderzoek, veelbelovend ook. Het ging helaas
 fout als de testopstelling niet verlicht was.
 In de toekomst doen we dat anders.
 
-\begin{thebibliography}{XX}
-
-\bibitem{pukkie}
-P.~Puk, Kabouters in de Tweede Kamer,
-Ons Tijdschrift 42 (2019) 12--34.
-
-\end{thebibliography}
+\bibliography{verslag.bib}
+\bibliographystyle{ieeetr}
 
 \section*{Appendix: Code}
 
@@ -116,6 +123,6 @@ De code van het programma is als volgt:
 
 \smallskip
 
-\lstinputlisting{iets.cc}
+\lstinputlisting{chess.cc}
 
 \end{document}
