@@ -1,0 +1,121 @@
+
+%
+% verslag.tex   18.2.2019
+% Voorbeeld LaTeX-file voor verslagen bij Kunstmatige Intelligentie
+% http://www.liacs.leidenuniv.nl/~kosterswa/AI/verslag.tex
+%
+% Gebruik:
+%   pdflatex verslag.tex
+%
+
+\documentclass[10pt]{article}
+
+\parindent=0pt
+
+\usepackage{fullpage}
+
+\frenchspacing
+
+\usepackage{microtype}
+
+\usepackage[english,dutch]{babel}
+
+\usepackage{graphicx}
+
+\usepackage{listings}
+% Er zijn talloze parameters ...
+\lstset{language=C++, showstringspaces=false, basicstyle=\small,
+  numbers=left, numberstyle=\tiny, numberfirstline=false, breaklines=true,
+  stepnumber=1, tabsize=8,
+  commentstyle=\ttfamily, identifierstyle=\ttfamily,
+  stringstyle=\itshape}
+
+\usepackage[setpagesize=false,colorlinks=true,linkcolor=red,urlcolor=blue,pdftitle={Het grote probleem},pdfauthor={Victor Erslag}]{hyperref}
+
+\author{David Kleingeld}
+\title{Het grote probleem}
+
+\begin{document}
+
+\selectlanguage{dutch}
+
+\maketitle
+
+\section{Inleiding}
+
+Dit is de eerste programmeeropdracht voor het college KI \footnote{zie ook wel: \url{http://liacs.leidenuniv.nl/~kosterswa/AI/}}. Hier schrijven we een simpel programma dat het laatste stuk van het spel schaken zo goed mogelijk probeert te spelen. We nemen aan dat er aan het eind van het spel $1$ witte dame, $1$ witte koning en $1$ zwarte koning over zijn. Dit kan op 3 manieren eindigen: schaakmat, pat stelling \footnote{ookwel stalemate in het engels} of het spel gaat eeuwig door. Dit laatste gebeurt als de witte koningin gevangen is. Er zijn strategieen om dit zo snel mogelijk te doen \footnote{zie ook wel: \url{https://www.schaakzone.nl/eindspel/matzetten-toren-koning.php}. Hier proberen we zonder specifieke voorkennis methodisch en systematisch dit probleem op te lossen.
+
+\section{Theorie}
+
+We willen hier dus een rationele agent schrijven. De meest voor de hand liggende oplossing voor een rationele agent is om alle mogelijkheden af te wegen en uit te rekenen. Alle mogelijke zetten voor ons schaakprogramma is echter onmogelijk. Een redelijke schatting is $\propto$ 30 \cite{Shannon:1988} mogelijke zetten en een partij lengte van $\propto$ zetten \ref{kosters:lecture2:sheet9}. Dit geeft ongeveer $30^100 \propto 5x10^{147}$ regels voor de tabel. Voor het complete schaakspel word dit alleen maar erger. Vanuit de beginpositie zijn er alleen al $10^120$ variaties \cite{Shannon:1988}.
+
+schaakprogramma’s  van  Shannon  en  Turing
+
+voor een simpele schaak agent met behulp van opzoektabel $35^100$ zetten nodig, kosters slide 2
+
+Schaak agent: obsbaar,deterministisch,niet episodisch, discreet
+
+doel gebaseerde agent, weegt mogelijke acties aan een bestaand model
+
+\section{Aanpak}
+
+We gaan als volgt te werk, zie ook Figuur~\ref{marx}.
+
+\bigskip
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=1.20]{marxbrothers2}
+\end{center}
+\caption{Zeppo, Harpo, Groucho en Chico Marx [\href{http://www.marx-brothers.org}{\underline{www.marxbrothers.org}}]}\label{marx}
+\end{figure}
+
+\noindent
+Zoals Groucho al zei:
+``Time flies like an arrow; fruit flies like a banana''. (Sommigen vinden trouwens dat de punt voor de " moet staan.)
+
+\section{Implementatie}
+
+Er is gekozen voor de programmeertaal C$\stackrel{++}{}$.
+Verder \ldots\ houden we het kort.
+
+\section{Experimenten}
+
+De resultaten van de experimenten zijn te
+vinden in onderstaande tabel:
+
+\begin{center}
+\begin{tabular}{l|l|l}
+experiment & tijd (sec) & uitslag\\
+\hline
+1 & 10 & $-7$\\
+2 & 42 & 123
+\end{tabular}
+\end{center}
+Hoe verklaren we dit? En waar is de grafiek?
+
+\section{Conclusie}
+
+Leuk onderzoek, veelbelovend ook. Het ging helaas
+fout als de testopstelling niet verlicht was.
+In de toekomst doen we dat anders.
+
+\begin{thebibliography}{XX}
+
+\bibitem{pukkie}
+P.~Puk, Kabouters in de Tweede Kamer,
+Ons Tijdschrift 42 (2019) 12--34.
+
+\end{thebibliography}
+
+\section*{Appendix: Code}
+
+Er is gebruik gemaakt van de \href{http://www.liacs.leidenuniv.nl/~kosterswa/AI/iets.cc}{\underline{skeletcode}} die te vinden is via
+de website van het college.
+De code van het programma is als volgt:
+
+\smallskip
+
+\lstinputlisting{iets.cc}
+
+\end{document}
