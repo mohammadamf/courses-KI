@@ -34,7 +34,7 @@
 \usepackage[setpagesize=false,colorlinks=true,linkcolor=red,urlcolor=blue,pdftitle={Het grote probleem},pdfauthor={Victor Erslag}]{hyperref}
 
 \author{David Kleingeld}
-\title{Het grote probleem}
+\title{Verslag KI opdracht schaken }
 
 \begin{document}
 
@@ -80,37 +80,73 @@ Beide agenten zijn geimplementeerd in C++ als uitbreiding op de gegeven \href{ht
 
 \bigskip
 
-% \begin{figure}[!htbp]
-% \begin{center}
-% \includegraphics[scale=1.20]{marxbrothers2}
-% \end{center}
-% \caption{Zeppo, Harpo, Groucho en Chico Marx [\href{http://www.marx-brothers.org}{\underline{www.marxbrothers.org}}]}\label{marx}
-% \end{figure}
 
-\noindent
-Zoals Groucho al zei:
-``Time flies like an arrow; fruit flies like a banana''. (Sommigen vinden trouwens dat de punt voor de " moet staan.)
 
 \section{Experimenten}
 
-De resultaten van de experimenten zijn te
-vinden in onderstaande tabel:
+We houden voor de twee geimplementeerde agenten en een agent die alleen willekeurig speelt per partij bij:
+\begin{enumerate}
+\item De uitkomst
+\item Het aantal beurten
+\item Voor elke beurt de score
+\item de afstand tussen de witte en zwarte stukken
+\end{enumerate}
 
+De uitkomsten met een maximale partijlengte van 200 zetten zijn:
 \begin{center}
-\begin{tabular}{l|l|l}
-experiment & tijd (sec) & uitslag\\
+\begin{tabular}{l|l|l|l}
+ uitkomst & willekeurig agent (\%)& simpele agent (\%) & monte carlo agent(\%)\\
 \hline
-1 & 10 & $-7$\\
-2 & 42 & 123
+wins &1.3\% & 21\% & 88\%\\
+stalemates &7.6\% & 36\% & 12.5\%\\
+simple ties &91\% & 0\% & 0\%\\
+stopped &0\% &42\% & 0\%\\
 \end{tabular}
 \end{center}
-Hoe verklaren we dit? En waar is de grafiek?
+
+\begin{center}
+\begin{tabular}{l|l|l|l}
+ uitkomst & willekeurig agent& simpele agent & monte carlo agent\\
+\hline
+wins & 55 & 429 & 350\\
+stalemates & 304 & 722 & 849\\
+simple ties & 3640 & 0 & 0\\
+stopped &1 &849 & 0\\
+\end{tabular}
+\end{center}
+
+Het gebrek aan simple ties bij de monte carlo agent is simpel te verklaren. Omdat gemiddeld gezien het verplaatsen van de dame naar een veld naast de zwarte koning een goede zet is komt dit vaak uit de monte carlo simulaties. Echter deze zet is niet realistish. Daarom word deze er uit gefilterd. Indien de dame nooit naast de zwarte koning staat kan deze ook nooit gevangen worden, er zijn daarom geen simpel ties. Dezelfde regel bestaat voor de simpele agent, daarom daar ook geen simpel ties.
+
+Hieronder zien we histogrammen van het aantal zetten per partij voor de 4 verschillende uitkomsten:
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.6]{willikeurige_agentn_moves}
+\end{center}
+\caption{Voor de Willikeurige Agent: Histogram van het aantal zetten nodig om een van de verschillende eindstaten te bereiken. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.6]{simpele_agentn_moves}
+\end{center}
+\caption{Voor de Simpele agent: histogram van het aantal zetten nodig om een van de verschillende eindstaten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\label{hist_simple}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.6]{monte_carlo_agentn_moves}
+\end{center}
+\caption{Voor de Monte Carlo agent: histogram van het aantal zetten nodig om een van de verschillende eindstaten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\end{figure}
 
 \section{Conclusie}
 
-Leuk onderzoek, veelbelovend ook. Het ging helaas
-fout als de testopstelling niet verlicht was.
-In de toekomst doen we dat anders.
+Met wat geluk of genoeg tijd en een willekeurig spelende tegenstander kan een doel gebaseerde agent beter presteren dan een willikeurige agent. Echter voor een groot deel is deze simpele agent nog afhankelijk van de zetten van de tegenstander. Er word niet gekeken naar de toekomstige situatie. Dit is gelijk te zien aan het histogram van het aantal zetten (zie figuur: \ref{hist_simple}). We zien dat het aantal beurten over het algemeen nog langer duurt dan bij de willekeurige agent. Een goede vervolg stap is het verder ontmoedigen van stalemates in de score berekening.
+
+Wat gelijk opvalt bij de Monte Carlo agent is het maximum aantal zetten. Dit is onder de 30. Ook zien we dat deze agent heel vaak binnen enkele zetten al klaar is of binnen enkele zetten een kritisch fout maakt. De sterke piek in stalemates in de eerste paar zetten doet vermoedde dat een aanpassing aan de score voor elke mogelijke zet zou kunnen helpen.
+
 
 \bibliography{verslag.bib}
 \bibliographystyle{ieeetr}
