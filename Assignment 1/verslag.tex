@@ -44,13 +44,16 @@
 
 \section{Inleiding}
 
-Dit is de eerste programmeeropdracht voor het college KI \footnote{zie ook wel: \url{http://liacs.leidenuniv.nl/~kosterswa/AI/}}. Hier schrijven we een simpel programma dat het laatste stuk van het spel schaken zo goed mogelijk probeert te spelen. We nemen aan dat er aan het eind van het spel $1$ witte dame, $1$ witte koning en $1$ zwarte koning over zijn. Dit kan op 3 manieren eindigen: schaakmat, pat stelling \footnote{ookwel stalemate in het engels} of het spel gaat eeuwig door. Dit laatste gebeurt als de witte koningin gevangen is. Er zijn strategieen om dit zo snel mogelijk te doen \footnote{zie ook wel: \url{https://www.schaakzone.nl/eindspel/matzetten-toren-koning.php}}. Hier proberen we zonder specifieke voorkennis methodisch en systematisch dit probleem op te lossen.
+Dit is de eerste programmeer-opdracht voor het college KI \footnote{zie ook wel: \url{http://liacs.leidenuniv.nl/~kosterswa/AI/}}. Hier schrijven we een simpel programma dat het laatste stuk van het spel schaken zo goed mogelijk probeert te spelen. We nemen aan dat er aan het eind van het spel $1$ witte dame, $1$ witte koning en $1$ zwarte koning over zijn. Dit kan op 3 manieren eindigen: schaakmat, pat stelling \footnote{ook wel stalemate in het engels} of het spel gaat eeuwig door. Dit laatste gebeurt als de witte koningin gevangen is. Er zijn strategieën om dit zo snel mogelijk te doen \footnote{zie ook wel: \url{https://www.schaakzone.nl/eindspel/matzetten-toren-koning.php}}. Hier proberen we zonder specifieke voorkennis methodisch en systematisch dit probleem op te lossen.
 
 \section{Theorie}
 
 We willen hier dus een rationele agent schrijven. De meest voor de hand liggende oplossing voor een rationele agent is om alle mogelijkheden af te wegen en uit te rekenen. Alle mogelijke zetten voor ons schaakprogramma is echter onmogelijk. Een redelijke schatting is $\approx$ 30 \cite{Shannon:1988} mogelijke zetten en een partij lengte van $\approx$ zetten \cite{kosters:lecture2:sheet9}. Dit geeft ongeveer $30^{100} \approx 5x10^{147}$ regels voor de tabel. Voor het complete schaakspel word dit alleen maar erger. Vanuit de beginpositie zijn er alleen al $10^{120}$ variaties \cite{Shannon:1988}.
 
-Shannon stelt een chess program voor dat posities op het bord een score geeft en daar mee de zetten selecteerd. Hier proberen we iets soort gelijks. Schaak is een volledig observeerbaar, deterministisch, sequenteel en discreet probleem. Immers het hele bord kan overzien worden, en komen geen kansen voor, de spelers zijn om de beurt aan zet en er zijn een gelimiteerd aantal zetten mogelijk. Dit betekend dat een doel gebaseerde agent, die mogelijke acties aan een bestaand model weegt, een goede aanpak kan zijn. Zoals Shannon voorstelt.
+Shannon stelt een schaak program voor dat posities op het bord een score geeft en daar mee de zetten selecteert. Hier proberen we iets soort gelijk. Schaak is een volledig observeer baar, deterministisch, sequentieel en discreet probleem. Immers het hele bord kan overzien worden, en komen geen kansen voor, de spelers zijn om de beurt aan zet en er zijn een gelimiteerd aantal zetten mogelijk. Dit betekend dat een doel gebaseerde agent, die mogelijke acties aan een bestaand model weegt, een goede aanpak kan zijn. Zoals Shannon voorstelt.
+
+Een modernere aanpak is het gebruik van deep learning in de vorm van neural networks. Bijvoorbeeld DeepChess\cite{inproceedings}, dit programma is een neural network getrained op een grote database aan schaak posities. Het trainen is gericht op het selecteren van de beste zet uit meerdere. Deepchess speelde na training op grootmeester niveau.
+Giraffe\cite{DBLP:journals/corr/Lai15a} is een machine learning programma dat met zichzelf speelt om alle domein specifieke kennis te leren. Het is getraind om zonder vooruit te kijken de beste zet te scoren. Giraffe speelt op het niveau van de top 2.2\% toernooi spelers.
 
 \section{Methode}
 
@@ -64,19 +67,19 @@ We schrijven 2 agenten. Als eerst schrijven doel gerichte agent die alle mogelij
       + 2*N_{w king}
 \end{equation}
 
-Waar $N_b$: het aantal mogelijke zetten voor de zwarte koning, $D_q$: de afstand van de witte dame tot de zwarte koning, $D_k$:, de afstand van de witte koning tot de zwate, $N_{w queen}$: number of moves for the white queen, $N_{w king}$: number of moves for the white king.
+Waar $N_b$: het aantal mogelijke zetten voor de zwarte koning, $D_q$: de afstand van de witte dame tot de zwarte koning, $D_k$:, de afstand van de witte koning tot de zwarte, $N_{w queen}$: number of moves for the white queen, $N_{w king}$: number of moves for the white king.
 
 Als de zwarte koning schaak staat voegen we 15 toe aan de score.
 
-Als tweede schrijven we een agent die gebruik maakt van de monte carlo simulatie. Hiervoor gaan we weer alle mogelijke zetten langs. We doen elke mogelijke zet en simuleren het verloop van het spel 1000 keer waarbij beide partijen na de zet random vervolgzetten doen zijn. De eindsituatie van al deze simulaties krijgt dan een score. Deze word anders bepaald dan hierboven namelijk:
+Als tweede schrijven we een agent die gebruik maakt van de Monte Carlo simulatie. Hiervoor gaan we weer alle mogelijke zetten langs. We doen elke mogelijke zet en simuleren het verloop van het spel 1000 keer waarbij beide partijen na de zet random vervolg zetten doen zijn. De eindsituatie van al deze simulaties krijgt dan een score. Deze word anders bepaald dan hierboven namelijk:
 
 \begin{equation}
   S = 1000*U + \Sigma_{i=0}^{1000} (N_{i})
 \end{equation}
-Hier is $N_i$ het aantal zetten dat de gesimuleerde partij korter was dan het maximum. U is het aantal partij-en waarbij de witte speler won.
+Hier is $N_i$ het aantal zetten dat de gesimuleerde partij korter was dan het maximum. U is het aantal partijen waarbij de witte speler won.
 
 \section{Implementatie}
-Beide agenten zijn geimplementeerd in C++ als uitbreiding op de gegeven \href{http://liacs.leidenuniv.nl/~kosterswa/AI/chess.cc}{\underline{skeletcode}}. Er zijn ook een aantal kleine wijzigingen gemaakt om het verkrijgen van statistiek te vergemakkelijken. Zo was er in de orginele skeletcode een visuele weergave van het speelbord. Deze is nu compile time uit te zetten zodat deze niet telkens gecopieerd word in de monte carlo simulatie.
+Beide agenten zijn geïmplementeerd in C++ als uitbreiding op de gegeven \href{http://liacs.leidenuniv.nl/~kosterswa/AI/chess.cc}{\underline{skelet-code}}. Er zijn ook een aantal kleine wijzigingen gemaakt om het verkrijgen van statistiek te vergemakkelijken. Zo was er in de originele skelet-code een visuele weergave van het speelbord. Deze is nu compile time uit te zetten zodat deze niet telkens gekopieerd word in de Monte Carlo simulatie.
 
 \bigskip
 
@@ -84,7 +87,7 @@ Beide agenten zijn geimplementeerd in C++ als uitbreiding op de gegeven \href{ht
 
 \section{Experimenten}
 
-We houden voor de twee geimplementeerde agenten en een agent die alleen willekeurig speelt per partij bij:
+We houden voor de twee geïmplementeerde agenten en een agent die alleen willekeurig speelt per partij bij:
 \begin{enumerate}
 \item De uitkomst
 \item Het aantal beurten
@@ -92,10 +95,10 @@ We houden voor de twee geimplementeerde agenten en een agent die alleen willekeu
 \item de afstand tussen de witte en zwarte stukken
 \end{enumerate}
 
-De uitkomsten met een maximale partijlengte van 200 zetten zijn:
+De uitkomsten met een maximale partij-lengte van 200 zetten zijn:
 \begin{center}
 \begin{tabular}{l|l|l|l}
- uitkomst & willekeurig agent (\%)& simpele agent (\%) & monte carlo agent(\%)\\
+ uitkomst & willekeurig agent (\%)& simpele agent (\%) & Monte Carlo agent(\%)\\
 \hline
 wins &1.3\% & 21\% & 88\%\\
 stalemates &7.6\% & 36\% & 12.5\%\\
@@ -106,7 +109,7 @@ stopped &0\% &42\% & 0\%\\
 
 \begin{center}
 \begin{tabular}{l|l|l|l}
- uitkomst & willekeurig agent& simpele agent & monte carlo agent\\
+ uitkomst & willekeurig agent& simpele agent & Monte Carlo agent\\
 \hline
 wins & 55 & 429 & 350\\
 stalemates & 304 & 722 & 849\\
@@ -115,42 +118,82 @@ stopped &1 &849 & 0\\
 \end{tabular}
 \end{center}
 
-Het gebrek aan simple ties bij de monte carlo agent is simpel te verklaren. Omdat gemiddeld gezien het verplaatsen van de dame naar een veld naast de zwarte koning een goede zet is komt dit vaak uit de monte carlo simulaties. Echter deze zet is niet realistish. Daarom word deze er uit gefilterd. Indien de dame nooit naast de zwarte koning staat kan deze ook nooit gevangen worden, er zijn daarom geen simpel ties. Dezelfde regel bestaat voor de simpele agent, daarom daar ook geen simpel ties.
+Het gebrek aan simple ties bij de Monte Carlo agent is simpel te verklaren. Omdat gemiddeld gezien het verplaatsen van de dame naar een veld naast de zwarte koning een goede zet is komt dit vaak uit de Monte Carlo simulaties. Echter deze zet is niet realistisch. Daarom word deze er uit gefilterd. Indien de dame nooit naast de zwarte koning staat kan deze ook nooit gevangen worden, er zijn daarom geen simpel ties. Dezelfde regel bestaat voor de simpele agent, daarom daar ook geen simpel ties.
 
 Hieronder zien we histogrammen van het aantal zetten per partij voor de 4 verschillende uitkomsten:
 
 \begin{figure}[!htbp]
 \begin{center}
-\includegraphics[scale=0.6]{willikeurige_agentn_moves}
+\includegraphics[scale=0.5]{8x8_stats/willikeurige_agentn_moves}
 \end{center}
-\caption{Voor de Willikeurige Agent: Histogram van het aantal zetten nodig om een van de verschillende eindstaten te bereiken. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\caption{Voor de Willekeurige Agent: Histogram van het aantal zetten nodig om een van de verschillende eind staten te bereiken. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
 \end{figure}
 
 \begin{figure}[!htbp]
 \begin{center}
-\includegraphics[scale=0.6]{simpele_agentn_moves}
+\includegraphics[scale=0.5]{8x8_stats/simpele_agentn_moves}
 \end{center}
-\caption{Voor de Simpele agent: histogram van het aantal zetten nodig om een van de verschillende eindstaten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\caption{Voor de Simpele agent: histogram van het aantal zetten nodig om een van de verschillende eind staten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
 \label{hist_simple}
 \end{figure}
 
 \begin{figure}[!htbp]
 \begin{center}
-\includegraphics[scale=0.6]{monte_carlo_agentn_moves}
+\includegraphics[scale=0.5]{8x8_stats/monte_carlo_agentn_moves}
 \end{center}
-\caption{Voor de Monte Carlo agent: histogram van het aantal zetten nodig om een van de verschillende eindstaten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\caption{Voor de Monte Carlo agent: histogram van het aantal zetten nodig om een van de verschillende eind staten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
 \end{figure}
+
+We kunnen ook partijen spelen op een kleiner bord, hieronder de resultaten voor dezelfde agenten maar dan gespeeld op 4x4 in plaats van 8x8. Dat geeft gemiddeld de volgende uitkomsten:
+
+\begin{center}
+\begin{tabular}{l|l|l|l}
+ uitkomst & willekeurig agent (\%)& simpele agent (\%) & Monte Carlo agent(\%)\\
+\hline
+wins &8.9\% & 33.2\% & 100\%\\
+stalemates &34.8\% & 60\% & 0\%\\
+simple ties &56.3\% & 0\% & 0\%\\
+stopped &0\% &42\% & 6.5\%\\
+\end{tabular}
+\end{center}
+
+En de onderstaande histogrammen:
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.5]{willikeurige_agentn_moves}
+\end{center}
+\caption{De Willekeurige Agent op een 4x4 bord: Histogram van het aantal zetten nodig om een van de verschillende eind staten te bereiken. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.5]{simpele_agentn_moves}
+\end{center}
+\caption{De Simpele agent op een 4x4 bord: histogram van het aantal zetten nodig om een van de verschillende eind staten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\label{hist_simple}
+\end{figure}
+
+\begin{figure}[!htbp]
+\begin{center}
+\includegraphics[scale=0.5]{monte_carlo_agentn_moves}
+\end{center}
+\caption{De Monte Carlo agent op een 4x4 bord: histogram van het aantal zetten nodig om een van de verschillende eind staten te behalen. De eind staat stopped is weg gelaten aangezien deze altijd na 200 zetten bereikt word}
+\end{figure}
+
+\pagebreak
 
 \section{Conclusie}
 
-Met wat geluk of genoeg tijd en een willekeurig spelende tegenstander kan een doel gebaseerde agent beter presteren dan een willikeurige agent. Echter voor een groot deel is deze simpele agent nog afhankelijk van de zetten van de tegenstander. Er word niet gekeken naar de toekomstige situatie. Dit is gelijk te zien aan het histogram van het aantal zetten (zie figuur: \ref{hist_simple}). We zien dat het aantal beurten over het algemeen nog langer duurt dan bij de willekeurige agent. Een goede vervolg stap is het verder ontmoedigen van stalemates in de score berekening.
+Met wat geluk of genoeg tijd en een willekeurig spelende tegenstander kan een doel gebaseerde agent beter presteren dan een willekeurige agent. Echter voor een groot deel is deze simpele agent nog afhankelijk van de zetten van de tegenstander. Er word niet gekeken naar de toekomstige situatie. Dit is gelijk te zien aan het histogram van het aantal zetten (zie figuur: \ref{hist_simple}). We zien dat het aantal beurten over het algemeen nog langer duurt dan bij de willekeurige agent. Een goede vervolg stap is het verder ontmoedigen van stalemates in de score berekening.
 
 Wat gelijk opvalt bij de Monte Carlo agent is het maximum aantal zetten. Dit is onder de 30. Ook zien we dat deze agent heel vaak binnen enkele zetten al klaar is of binnen enkele zetten een kritisch fout maakt. De sterke piek in stalemates in de eerste paar zetten doet vermoedde dat een aanpassing aan de score voor elke mogelijke zet zou kunnen helpen.
 
+Op het kleinere bord verloopt het spel veel sneller door het lagere aantal mogelijke zetten. Alle agenten doen het een stuk beter, het is immers makkelijker om de zwarte koning een hoek in te drijven. Voor de Willekeurige agent veranderd er verder weinig. Echter de simpele en Monte Carlo agent veranderen dramatisch. De simpele agent weet het spel nu dramatisch sneller te spelen, vaak binnen 4 zetten. De Monte Carlo agent heeft geen patstellingen (stalemate) meer en de meeste partijen lukken binnen 4 zetten.
 
 \bibliography{verslag.bib}
 \bibliographystyle{ieeetr}
 
+\pagebreak
 \section*{Appendix: Code}
 
 Er is gebruik gemaakt van de \href{http://www.liacs.leidenuniv.nl/~kosterswa/AI/iets.cc}{\underline{skeletcode}} die te vinden is via

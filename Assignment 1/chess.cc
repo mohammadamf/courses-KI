@@ -22,7 +22,7 @@
 using namespace std;
 
 const int MAX = 30;
-const bool WILL_TAKE_QUEEN = false;
+const bool WILL_TAKE_QUEEN = true;
 const bool PROTECT_QUEEN = true;
 const bool PROTECT_KING = false;
 #define DISABLE_PRINT //increases performence as array is no longer copied
