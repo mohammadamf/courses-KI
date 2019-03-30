@@ -13,21 +13,32 @@ Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 
 Bank Main           ;bank 1
   Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
-  comp #1, 1        ;
-  bJump 2, 1        ;als geen robot voor ons jump naar bank No_Bot
-  bJump 3, 1        ;als robot voor ons jump naar Bot_Detected
+  comp #1, 0        ;is het veld voor ons leeg?
+  bJump 3, 1        ;nee => kijk wat voor bot het is
+  bJump 2, 1        ;ja => maak een bot voor ons
   
 Bank No_Bot         ;bank 2
-  Create 2, 3, 1    ;nieuwe robot, instructie set 2, 3 banken, kan bewegen (1) 
+  Create 2, 4, 1    ;nieuwe robot, instructie set 2, 3 banken, kan bewegen (1) 
   Trans 1, 1        ;bank naar de nieuwe robot
   Trans 2, 2        ;bank naar de nieuwe robot
   Trans 3, 3        ;bank naar de nieuwe robot
-  Set %Active, 1
+  Trans 4, 4        ;bank naar de nieuwe robot
+  Set %Active, 1    ;activate the remote bot
+  Set #Active, 0    ;deactivate self
   
 Bank Bot_Detected   ;bank 3
-  turn 0            ;draai linksom
+  comp #1, 2        ;is de bot een andere kleur?
+  bJump 4, 1        ;nee => beslis master/slave
+  turn 0            ;ja => draai linksom
   bJump 2, 1        ;plaats een robot voor ons
   
+Bank Found_Other    ;band 4
+  set #4, 1         ;debug print
+                    ;only continue if master
+  Set %Active, 0    ;deactivate the remote bot
+                    ;only reach this part if master
+  set #20, 1        ;mark this robot as center
+  ;beslis master/slave
   
   
 ; ideeen: 
@@ -39,4 +50,9 @@ Bank Bot_Detected   ;bank 3
 ; -kijk na een botsing of een bericht geforward kan worden in een rechte lijn
 ;  zo nee dan is de botsing met een andere kleur robot
 ;
-; -bot van andere speler is een opponent? => JA, GAAN WE GEBRUIKEN
+; -bot van andere kleur is een opponent? => JA, GAAN WE GEBRUIKEN
+
+; hoe te beslissen welke bot master word en welke slave?
+; -try to deactivate other bot before we get deactivated? (assuming deactivate = atomic)
+; -remove pattern/remove bank? atomic???
+;
