@@ -16,20 +16,24 @@ Bank Main           ;bank 1
   comp #1, 0        ;is het veld voor ons leeg?
   bJump 3, 1        ;nee => kijk wat voor bot het is
   bJump 2, 1        ;ja => maak een bot voor ons
+  @standby
+  Jump @standby
   
 Bank No_Bot         ;bank 2
-  Create 2, 4, 1    ;nieuwe robot, instructie set 2, 3 banken, kan bewegen (1) 
+  Create 2, 5, 1    ;nieuwe robot, instructie set 2, 5 banken, kan bewegen (1) 
   Trans 1, 1        ;bank naar de nieuwe robot
   Trans 2, 2        ;bank naar de nieuwe robot
   Trans 3, 3        ;bank naar de nieuwe robot
   Trans 4, 4        ;bank naar de nieuwe robot
+  Trans 5, 5        ;bank naar de nieuwe robot
   Set %Active, 1    ;activate the remote bot
-  Set #Active, 0    ;deactivate self
+  bJump 1, @standby        ;go standby
   
 Bank Bot_Detected   ;bank 3
   comp #1, 2        ;is de bot een andere kleur?
   bJump 4, 1        ;nee => beslis master/slave
   turn 0            ;ja => draai linksom
+  set #19, 1        ;onthoud dat we naar links gedraaid hebben
   bJump 2, 1        ;plaats een robot voor ons
   
 Bank Found_Other    ;band 4
@@ -38,9 +42,25 @@ Bank Found_Other    ;band 4
   Set %Active, 0    ;deactivate the remote bot
                     ;only reach this part if master
   set #20, 1        ;mark this robot as center
-  ;beslis master/slave
   
-  
+  Comp #19, 1       ;zijn we naar links gedraaid?
+  Turn 0            ;nee -> keer om
+  Turn 0            ;ja -> draai 90 naar rechts
+  Trans 5, 1
+  bJump 1, @standby
+
+Bank Destroy        ;bank 5
+  Jump 5            ;make sure then real code start at 5, since standby runs at 5
+  Jump 4            ;make sure then real code start at 5, since standby runs at 5
+  Jump 3            ;make sure then real code start at 5, since standby runs at 5
+  Jump 2            ;make sure then real code start at 5, since standby runs at 5
+  Jump 1            ;make sure then real code start at 5, since standby runs at 5
+  Comp #19, 1       ;zijn we naar links gedraaid?
+  Turn 0            ;nee -> keer om
+  Turn 0            ;ja -> draai 90 naar rechts
+  Trans 5, 1
+  Die
+
 ; ideeen: 
 ; 
 ; hoe kleur onderscheiden
@@ -55,4 +75,5 @@ Bank Found_Other    ;band 4
 ; hoe te beslissen welke bot master word en welke slave?
 ; -try to deactivate other bot before we get deactivated? (assuming deactivate = atomic)
 ; -remove pattern/remove bank? atomic???
-;
+; -daarna naar achteren alle nodes vernietigen (gaat sneller dan nieuwe maken)
+;   vernietig door poison programma naar bank 5 te kopieeren
