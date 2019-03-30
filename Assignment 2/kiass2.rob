@@ -11,6 +11,11 @@ Published  OpenSource  yes                      ; This prog is open source
 Published  Language    RC300                    ; Written in RC300 language
 Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 
+;reg 1: stores scan result
+;reg 5: did we turn left
+;reg 20: are we master?
+;reg 19: are we slave?
+
 Bank Main           ;bank 1
   Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
   comp #1, 0        ;is het veld voor ons leeg?
@@ -20,48 +25,105 @@ Bank Main           ;bank 1
   Jump @standby
   
 Bank No_Bot         ;bank 2
-  Create 2, 5, 1    ;nieuwe robot, instructie set 2, 5 banken, kan bewegen (1) 
+  Create 2, 7, 0    ;nieuwe robot, instructie set 2, 5 banken, kan niet bewegen (0) 
+  
+  ;kan mislukken door race conditions daarom:
+  Scan #1             ;kijk op er een robot voor ons staat, sla op in reg 1
+  comp #1, 1          ;is er nu een bot met een andere kleur?  
+  Jump   @trans_regs  ;nee => ga verder
+  bJump 4, 1          ;ja => race condition, beslis master vs slave
+  
+  @trans_regs
   Trans 1, 1        ;bank naar de nieuwe robot
   Trans 2, 2        ;bank naar de nieuwe robot
   Trans 3, 3        ;bank naar de nieuwe robot
   Trans 4, 4        ;bank naar de nieuwe robot
   Trans 5, 5        ;bank naar de nieuwe robot
+  Trans 6, 6        ;bank naar de nieuwe robot
+  Trans 7, 7        ;bank naar de nieuwe robot
   Set %Active, 1    ;activate the remote bot
-  bJump 1, @standby        ;go standby
+  bJump 1, @standby ;go standby
   
 Bank Bot_Detected   ;bank 3
-  comp #1, 2        ;is de bot een andere kleur?
+  comp #1, 2        ;is de bot dezelfde kleur?
   bJump 4, 1        ;nee => beslis master/slave
   turn 0            ;ja => draai linksom
-  set #19, 1        ;onthoud dat we naar links gedraaid hebben
+  set #5, 1         ;onthoud dat we naar links gedraaid hebben
   bJump 2, 1        ;plaats een robot voor ons
   
 Bank Found_Other    ;band 4
-  set #4, 1         ;debug print
                     ;only continue if master
-  Set %Active, 0    ;deactivate the remote bot
+  Set %Active, 0    ;deactivate the remote bot to become master
                     ;only reach this part if master
   set #20, 1        ;mark this robot as center
   
-  Comp #19, 1       ;zijn we naar links gedraaid?
+  ;tell the other color on in front to destroy all same colord save itself
+  Trans 7, 1        ;transfer destroy same color program
+  Set %Active, 1    ;activate the slave bot
+  ;bJump 1, @standby ;FIXME remove this (testing only)
+  
+  ;delete the bots we used to get here
+  Comp #5, 1       ;zijn we naar links gedraaid?
   Turn 0            ;nee -> keer om
   Turn 0            ;ja -> draai 90 naar rechts
-  Trans 5, 1
-  bJump 1, @standby
+  Trans 5, 1         
+  
+  ;TODO go around
+  bJump 1, @standby ;TODO placeholder
 
-Bank Destroy        ;bank 5
-  Jump 5            ;make sure then real code start at 5, since standby runs at 5
-  Jump 4            ;make sure then real code start at 5, since standby runs at 5
-  Jump 3            ;make sure then real code start at 5, since standby runs at 5
-  Jump 2            ;make sure then real code start at 5, since standby runs at 5
-  Jump 1            ;make sure then real code start at 5, since standby runs at 5
-  Comp #19, 1       ;zijn we naar links gedraaid?
-  Turn 0            ;nee -> keer om
-  Turn 0            ;ja -> draai 90 naar rechts
+Bank Destroy_upstream ;bank 5
+  Jump 5              ;make sure then real code start at 5, since standby runs at 5
+  Jump 4              ;make sure then real code start at 5, since standby runs at 5
+  Jump 3              ;make sure then real code start at 5, since standby runs at 5
+  Jump 2              ;make sure then real code start at 5, since standby runs at 5
+  Jump 1              ;make sure then real code start at 5, since standby runs at 5
+  Comp #5, 1          ;zijn we naar links gedraaid?
+  Turn 0              ;nee -> keer om
+  Turn 0              ;ja -> draai 90 naar rechts
   Trans 5, 1
   Die
 
-; ideeen: 
+Bank Destroy_downstream ;bank 6
+  Jump 5                ;make sure then real code start at 5, since standby runs at 5
+  Jump 4                ;make sure then real code start at 5, since standby runs at 5
+  Jump 3                ;make sure then real code start at 5, since standby runs at 5
+  Jump 2                ;make sure then real code start at 5, since standby runs at 5
+  Jump 1                ;make sure then real code start at 5, since standby runs at 5
+  Trans 6, 1
+  Die
+  
+Bank Destroy_Same_Color ;bank 7
+  set #19, 1        ;mark this bot as the slave
+
+  Scan #1
+  comp #1, 2        ;bot met zelfde kleur?
+  Jump @scan2       ;nee -> draai en scan nog 3 maal
+  Trans 6, 1        ;ja -> transfer destroy downstream program
+  
+  @scan2
+  turn 1
+  Scan #1
+  comp #1, 2        ;bot met zelfde kleur?
+  Jump @scan3       ;nee -> draai en scan nog 3 maal
+  Trans 5, 1        ;ja -> transfer destroy upstream program 
+
+  @scan3
+  turn 1
+  Scan #1
+  comp #1, 2        ;bot met zelfde kleur?
+  Jump @scan4       ;nee -> draai en scan nog 3 maal
+  Trans 5, 1        ;ja -> transfer destroy upstream program 
+
+  @scan4
+  turn 1
+  Scan #1
+  comp #1, 2        ;bot met zelfde kleur?
+  bJump 1, @standby ;nee -> doe niks meer
+  Trans 5, 1        ;ja -> transfer destroy upstream program 
+
+  bJump 1, @standby ;doe niks meer
+
+;ideeen: 
 ; 
 ; hoe kleur onderscheiden
 ; -na een turn verander een var, in principe is de eerste botsing tussen 
