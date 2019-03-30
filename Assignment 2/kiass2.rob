@@ -1,0 +1,42 @@
+; RoboCom program
+
+Published  Name        KIASS2                   ; Name of this program
+Published  Author      YOUR_NAME                ; Name of author
+Published  EMail       YOUR_EMAIL_ADDRESS       ; Author's e-mail address
+Published  Country     YOUR_HOME_COUNTRY_HERE   ; Author's home country
+Published  Comment     MAKE_A_COMMENT           ; A comment on this prog
+Secret     Password    YOUR_PASSWORD_HERE       ; Password for competitons
+
+Published  OpenSource  yes                      ; This prog is open source
+Published  Language    RC300                    ; Written in RC300 language
+Published  OptionSet   RC3 Standards            ; Recommended OptionSet
+
+Bank Main           ;bank 1
+  Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
+  comp #1, 1        ;
+  bJump 2, 1        ;als geen robot voor ons jump naar bank No_Bot
+  bJump 3, 1        ;als robot voor ons jump naar Bot_Detected
+  
+Bank No_Bot         ;bank 2
+  Create 2, 3, 1    ;nieuwe robot, instructie set 2, 3 banken, kan bewegen (1) 
+  Trans 1, 1        ;bank naar de nieuwe robot
+  Trans 2, 2        ;bank naar de nieuwe robot
+  Trans 3, 3        ;bank naar de nieuwe robot
+  Set %Active, 1
+  
+Bank Bot_Detected   ;bank 3
+  turn 0            ;draai linksom
+  bJump 2, 1        ;plaats een robot voor ons
+  
+  
+  
+; ideeen: 
+; 
+; hoe kleur onderscheiden
+; -na een turn verander een var, in principe is de eerste botsing tussen 
+;  robots van verschillende kleuren
+;
+; -kijk na een botsing of een bericht geforward kan worden in een rechte lijn
+;  zo nee dan is de botsing met een andere kleur robot
+;
+; -bot van andere speler is een opponent? => JA, GAAN WE GEBRUIKEN
