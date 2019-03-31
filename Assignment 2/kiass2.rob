@@ -117,11 +117,13 @@ Bank Destroy_Same_Color ;bank 7
   @scan4
   turn 1
   Scan #1
-  comp #1, 2        ;bot met zelfde kleur?
-  bJump 1, @standby ;nee -> doe niks meer
-  Trans 5, 1        ;ja -> transfer destroy upstream program 
+  comp #1, 2                        ;bot met zelfde kleur?
+  Jump @destroy_same_color_standby  ;nee -> doe niks meer
+  Trans 5, 1                        ;ja -> transfer destroy upstream program 
 
-  bJump 1, @standby ;doe niks meer
+  @destroy_same_color_standby
+  Set #Active, 0
+  Jump @destroy_same_color_standby
 
 ;ideeen: 
 ; 
