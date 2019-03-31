@@ -13,6 +13,7 @@ Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 
 ;reg 1: stores scan result
 ;reg 5: did we turn left
+;reg 6: transfer Destroy_upstream(5) or Destroy_downstream(6)
 ;reg 20: are we master?
 ;reg 19: are we slave?
 
@@ -63,10 +64,8 @@ Bank Found_Other    ;band 4
   ;bJump 1, @standby ;FIXME remove this (testing only)
   
   ;delete the bots we used to get here
-  Comp #5, 1       ;zijn we naar links gedraaid?
-  Turn 0            ;nee -> keer om
-  Turn 0            ;ja -> draai 90 naar rechts
-  Trans 5, 1         
+  bJump 7, 1
+     
   
   ;TODO go around
   bJump 1, @standby ;TODO placeholder
@@ -98,7 +97,7 @@ Bank Destroy_Same_Color ;bank 7
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
-  Trans 6, 1        ;ja -> transfer destroy downstream program
+  Trans 6, 1        ;ja -> transfer destroy downstream program ;leaving out can do intresting things....
   
   @scan2
   turn 1
