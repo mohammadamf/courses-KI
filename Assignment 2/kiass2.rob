@@ -13,16 +13,25 @@ Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 
 ;reg 1: stores scan result
 ;reg 5: did we turn left
-;reg 6: transfer Destroy_upstream(5) or Destroy_downstream(6)
+;reg 6: return register (what bank to jump back to)
+;reg 7: return register offset (what offset in that bank to jump to)
 ;reg 20: are we master?
 ;reg 19: are we slave?
 
 Bank Main           ;bank 1
+  Jump @init
+  @standby
+  Jump @standby  
+  
+  ;set return registers to jump back to standby
+  set #6, 1         ;first bank
+  set #7, 2         ;second instruction
+  
+  @init
   Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
   comp #1, 0        ;is het veld voor ons leeg?
   bJump 3, 1        ;nee => kijk wat voor bot het is
   bJump 2, 1        ;ja => maak een bot voor ons
-  @standby
   Jump @standby
   
 Bank No_Bot         ;bank 2
@@ -59,23 +68,23 @@ Bank Found_Other    ;band 4
   set #20, 1        ;mark this robot as center
   
   ;tell the other color on in front to destroy all same colord save itself
-  Trans 7, 1        ;transfer destroy same color program
-  Set %Active, 1    ;activate the slave bot
+  Trans 7, 1         ;transfer destroy same color program
+  Set %Active, 1     ;activate the slave bot
   ;bJump 1, @standby ;FIXME remove this (testing only)
   
   ;delete the bots we used to get here
+  set #6, 4         ;set return reg to go to this bank when done
+  set #7, 8         ;set return reg to go to the instruction after jump
   bJump 7, 1
      
-  
+  @go_round
+  Set #10 , 1
+  Set #Active, 0
   ;TODO go around
-  bJump 1, @standby ;TODO placeholder
 
 Bank Destroy_upstream ;bank 5
-  Jump 5              ;make sure then real code start at 5, since standby runs at 5
-  Jump 4              ;make sure then real code start at 5, since standby runs at 5
-  Jump 3              ;make sure then real code start at 5, since standby runs at 5
-  Jump 2              ;make sure then real code start at 5, since standby runs at 5
-  Jump 1              ;make sure then real code start at 5, since standby runs at 5
+  Jump 2              ;make sure then real code start at 2, since standby runs at 2
+  Jump 1              ;make sure then real code start at 2, since standby runs at 2
   Comp #5, 1          ;zijn we naar links gedraaid?
   Turn 0              ;nee -> keer om
   Turn 0              ;ja -> draai 90 naar rechts
@@ -83,17 +92,17 @@ Bank Destroy_upstream ;bank 5
   Die
 
 Bank Destroy_downstream ;bank 6
-  Jump 5                ;make sure then real code start at 5, since standby runs at 5
-  Jump 4                ;make sure then real code start at 5, since standby runs at 5
-  Jump 3                ;make sure then real code start at 5, since standby runs at 5
-  Jump 2                ;make sure then real code start at 5, since standby runs at 5
-  Jump 1                ;make sure then real code start at 5, since standby runs at 5
+  Jump 2                ;make sure then real code start at 2, since standby runs at 2
+  Jump 1                ;make sure then real code start at 2, since standby runs at 2
   Trans 6, 1
   Die
   
 Bank Destroy_Same_Color ;bank 7
-  set #19, 1        ;mark this bot as the slave
+  Jump @start_same_color
+  @standby_same_color
+  Jump @standby_same_color  
 
+  @start_same_color
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
@@ -116,13 +125,9 @@ Bank Destroy_Same_Color ;bank 7
   @scan4
   turn 1
   Scan #1
-  comp #1, 2                        ;bot met zelfde kleur?
-  Jump @destroy_same_color_standby  ;nee -> doe niks meer
-  Trans 5, 1                        ;ja -> transfer destroy upstream program 
-
-  @destroy_same_color_standby
-  Set #Active, 0
-  Jump @destroy_same_color_standby
+  comp #1, 2        ;bot met zelfde kleur?
+  bJump #6, #7      ;nee -> return
+  Trans 5, 1        ;ja -> transfer destroy upstream program
 
 ;ideeen: 
 ; 
