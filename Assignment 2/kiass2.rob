@@ -31,7 +31,7 @@ Bank No_Bot         ;bank 2
   ;kan mislukken door race conditions daarom:
   Scan #1             ;kijk op er een robot voor ons staat, sla op in reg 1
   comp #1, 1          ;is er nu een bot met een andere kleur?  
-  Jump   @trans_regs  ;nee => ga verder
+  Jump @trans_regs    ;nee => ga verder
   bJump 4, 1          ;ja => race condition, beslis master vs slave
   
   @trans_regs
@@ -92,8 +92,6 @@ Bank Destroy_downstream ;bank 6
   Die
   
 Bank Destroy_Same_Color ;bank 7
-  set #19, 1        ;mark this bot as the slave
-
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
@@ -117,12 +115,15 @@ Bank Destroy_Same_Color ;bank 7
   turn 1
   Scan #1
   comp #1, 2                        ;bot met zelfde kleur?
-  Jump @destroy_same_color_standby  ;nee -> doe niks meer
+  Jump @done_scanning               ;nee -> doe niks meer
   Trans 5, 1                        ;ja -> transfer destroy upstream program 
 
-  @destroy_same_color_standby
-  Set #Active, 0
-  Jump @destroy_same_color_standby
+  @done_scanning
+  comp #20, 1        ;zijn we master?
+  Set #Active, 0     ;nee -> klaar
+  
+  bJump 1, @standby ;go standby
+  ;Jump @destroy_same_color_standby
 
 ;ideeen: 
 ; 
