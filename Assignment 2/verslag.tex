@@ -56,7 +56,27 @@ Wanneer een robot een nieuwe robot maakt noemen we deze ouder en kind. Het kind 
 
 Alle robots starten met hetzelfde programma op een willekeurige positie in de spelwereld. Deze is een vierkant waarbij de randen aan elkaar gelijmd zijn, als je aan een kant over de rand beweegt kom je bij de tegenoverstaande rand de wereld weer in. De afstand tussen de randen is beperkt.
 
-//TODO specifiekere definitie doel
+Initieel proberen we met de bovenstaande beperkingen de verschillende agenten (robots) een 3x3 vierkant te vormen. We kijken ook wat er gebeurt met de agenten als we er initieel drie plaatsen. Vormt er een 5x5 vierkant? 
+
+De bovenstaande uiteenzetting is samen te vatten de in AI veel gebruikte 4 PEAS eigenschappen om de agent te beschrijven: 
+
+\begin{enumerate}
+    \item Performance: vinden van de andere kleur, de ander kleur volledig omsluiten
+    \item Enviroment: k bij k discrete wereld, tegenoverstaande randen aan elkaar, begint op een willekeurige plek
+    \item Actuatoren: roteren, verplaatsen, nieuw robots maken, robots activeren, robots deactiveren, robots hun programmering overschrijven.
+    \item bekijken wat er voor zich staat: zelfde kleur robot, andere kleur robot, niks
+\end{enumerate}
+
+\begin{description}
+ \item[deterministisch] Nee, de startpositie is onbepaald en de volgorde waarin de robots acties gesimuleerd worden is onbepaald. 
+ \item[statish] Ja, in het geval van de uitdagind om een vierkant te maken is er geen verandering aan de wereld terwijl onze agenten nadenken. Echter de robocom wereld is zeker niet statisch wanneer er andere niet door ons geschreven agenten in geplaatst worden.
+ \item[obeserveerbaar] slechts deels, voor een enkele agent is alleen zichtbaar wat er op dat moment recht voor de agent staat.
+
+ \item[multi-agent] Ja, we werken immers vanaf het begin met meer dan 1 agent, wel cooperatief.
+ \item[discreet] Elke actie kost een vast aantal tiks, alle agenten worden elke tik een stap verder gesimuleerd. Dus volledig discreet.
+ \item[episodish] Nee, wanneer het vierkant gevormd is zijn we klaar.
+\end{description}
+
 
 \section{Methode}
 
@@ -73,10 +93,7 @@ Dit werkt niet wanneer de start orientatie parallel is. Dit lossen we op door de
 
 //TODO voorbeeld plaatje paralelle start => gevonden
 
-Wanneer de lijn de robots van een andere kleur bereikt heeft verwijderen we de hele lijn tot naast de andere kleur. De andere kleur krijgt de opdracht hun lijnen ook te verwijderen.
-
-//TODO defineeer upstream: Daarmee bedoelen we alle nodes die gemaakt zijn om hier te komen.  
-
+Wanneer de lijn de robots van een andere kleur bereikt heeft verwijderen we de hele lijn tot naast de andere kleur. De andere kleur krijgt de opdracht hun lijnen ook te verwijderen. We defineren verder twee richtingen in de lijnen, upstream en downstream. Upstream is richting de eerste robot/eerder geplaatste robots, downstream tegenovergesteld.
 
 \section{Uitvoering}
 
@@ -164,6 +181,26 @@ Het opruimen van alle lijnen kost tijd, wanneer we direct nadat de master klaar 
 actieve bank? //FIXME wat bedoel ik hier?
 
 \pagebreak
+
+\section{Resultaten} 
+
+In veel gevallen word een vierkant bereikt wanneer twee robots geplaatst worden. Echter soms word een lijn niet juist verwijderd, deze ziet de andere kleur van het buitenste vierkant als centrum en gaat hier omheen zo vormt een 5x5 vierkant als in figuur \ref{fig:1}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{fout1.png}
+    \caption{Een 5x5 vierkant}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{coffee.jpg}
+    \caption{More coffee.}
+  \end{subfigure}
+  \caption{The same cup of coffee. Two times.}
+  \label{fig:coffee}
+\end{figure}
+
+
 
 \section{Conclusie}
 

@@ -92,6 +92,13 @@ Bank Destroy_downstream ;bank 6
   Die
   
 Bank Destroy_Same_Color ;bank 7
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  
+  @scan1
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
@@ -119,9 +126,20 @@ Bank Destroy_Same_Color ;bank 7
   Trans 5, 1                        ;ja -> transfer destroy upstream program 
   @done_turning
   
-  comp #20, 1                       ;bot master?
+  comp #20, 0                       ;bot slave?
+  bJump 8, @start_building          ;nee -> maak circle
+  comp #10, 0                       ;ja -> first loop?
   Set #Active, 0                    ;nee -> doe niks meer
-  bJump 8, @start_building          ;ja -> maak circle
+  
+  Set #10, 1000
+  @while_loop2
+  sub #10, 1
+  comp #10, 0                       ;klaar met loop?
+  Jump @while_loop2                  ;nee -> terug naar boven
+  
+  Set #10, 1                        ;ja -> wacht en doe dit nog een keer
+  jump @scan1                       ;ja -> wacht en doe dit nog een keer
+  
 
 Bank make_circle ;bank 8
   ;look whats right
@@ -148,7 +166,7 @@ Bank make_circle ;bank 8
   
   @start_building
   ;wait for all robots around us to get destroyed
-  Set #10, 300
+  Set #10, 3000
   @while_loop
   sub #10, 1
   comp #10, 0                       ;klaar met loop?
