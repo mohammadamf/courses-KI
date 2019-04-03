@@ -13,7 +13,6 @@ Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 
 ;reg 1: stores scan result
 ;reg 5: did we turn left
-;reg 6: transfer Destroy_upstream(5) or Destroy_downstream(6)
 ;reg 20: are we master?
 ;reg 19: are we slave?
 
@@ -64,7 +63,7 @@ Bank Found_Other    ;band 4
   Set %Active, 1    ;activate the slave bot
   ;bJump 1, @standby ;FIXME remove this (testing only)
   
-  ;delete the bots we used to get here
+  ;delete the bots we used to get here en maak de circle
   bJump 7, 1
      
   
@@ -93,8 +92,6 @@ Bank Destroy_downstream ;bank 6
   Die
   
 Bank Destroy_Same_Color ;bank 7
-  set #19, 1        ;mark this bot as the slave
-
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
