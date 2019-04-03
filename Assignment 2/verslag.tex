@@ -24,6 +24,8 @@
 %\usepackage{hyperref}
 
 \usepackage{listings}
+\usepackage{subcaption}
+
 % Er zijn talloze parameters ...
 \lstset{language=C++, showstringspaces=false, basicstyle=\small,
   numbers=left, numberstyle=\tiny, numberfirstline=false, breaklines=true,
@@ -31,10 +33,10 @@
   commentstyle=\ttfamily, identifierstyle=\ttfamily,
   stringstyle=\itshape}
 
-\usepackage[setpagesize=false,colorlinks=true,linkcolor=red,urlcolor=blue,pdftitle={Het grote probleem},pdfauthor={Victor Erslag}]{hyperref}
+\usepackage[setpagesize=false,colorlinks=true,linkcolor=red,urlcolor=blue,pdftitle={Het grote probleem},pdfauthor={David Kleingeld}]{hyperref}
 
-\author{David Kleingeld}
-\title{Verslag KI opdracht schaken }
+\author{David Kleingeld, s1432982}
+\title{RoboSquares, color coordinated multi agent square formation}
 
 \begin{document}
 
@@ -44,13 +46,11 @@
 
 \section{Inleiding}
 
-Robocom is een computer "spel" waarbij de spelers bord stukken ookwel robots programmeren. Wanneer de programmas af zijn start het spel ookwel de simulatie. De robots voeren dan hun acties uit. Traditioneel is het doel om de robots van de tegenstander uit te schakelen \cite{robocom}. Hier proberen we de robots echter juist stamen te laten werken. Specifieker nog we proberen ze een vierkant te laten vormen. Een vierkant met een andere kleur in het midden dan aan de rand.
-
-//TODO background/verhaaltje
+Robocom is een computer "spel" waarbij de spelers bord stukken ook wel robots programmeren. Wanneer de programmas af zijn start het spel ook wel de simulatie. De robots voeren dan hun acties uit. Traditioneel is het doel om de robots van de tegenstander uit te schakelen \cite{robocom_program}. Hier proberen we de robots echter juist samen te laten werken. Specifieker nog we proberen ze een vierkant te laten vormen. Een vierkant met een andere kleur in het midden dan aan de rand.
 
 \section{Theorie}
 
-De robots die we gebruiken hebben slechts 12 verschillende operaties. Ze kunnen bewegen, kijken wat er voor hun staat, een nieuwe robot creeren, het programma van een andere robot veranderen en zichzelf verwijderen. Daarnaast bied de assambly achtige taal waarin de robots geschreven worden: variabelen in de vorm van registers, add en subtract operaties op die registers en basale logica via een compare operatie en jumps. Operaties kosten tijd, ookwel tiks. Sommige operaties kosten echter meer tiks dan andere. Voor elke robot word na elkaar 1 tick gesimuleerd. Het maken van nieuwe robots is het duurst gevolgt door het overzetten van programmas.
+De robots die we gebruiken hebben slechts 12 verschillende operaties \cite{robocom_docs}. Ze kunnen bewegen, kijken wat er voor hun staat, een nieuwe robot creëren, het programma van een andere robot veranderen en zichzelf verwijderen. Daarnaast bied de assembler achtige taal waarin de robots geschreven worden: variabelen in de vorm van registers, add en subtract operaties op die registers en basale logica via een compare operatie en jumps. Operaties kosten tijd, ook wel tiks. Sommige operaties kosten echter meer tiks dan andere. Voor elke robot word na elkaar 1 tick gesimuleerd. Het maken van nieuwe robots is het duurst gevolgd door het overzetten van programmas.
 
 Wanneer een robot een nieuwe robot maakt noemen we deze ouder en kind. Het kind krijgt dezelfde kleur als de ouder en start met een leeg programma. Een nieuwe robot staat standaard uit en kan aangezet worden door een robot ernaast. 
 
@@ -62,38 +62,48 @@ De bovenstaande uiteenzetting is samen te vatten de in AI veel gebruikte 4 PEAS 
 
 \begin{enumerate}
     \item Performance: vinden van de andere kleur, de ander kleur volledig omsluiten
-    \item Enviroment: k bij k discrete wereld, tegenoverstaande randen aan elkaar, begint op een willekeurige plek
+    \item Environment: k bij k discrete wereld, tegenoverstaande randen aan elkaar, begint op een willekeurige plek
     \item Actuatoren: roteren, verplaatsen, nieuw robots maken, robots activeren, robots deactiveren, robots hun programmering overschrijven.
     \item bekijken wat er voor zich staat: zelfde kleur robot, andere kleur robot, niks
 \end{enumerate}
 
 \begin{description}
  \item[deterministisch] Nee, de startpositie is onbepaald en de volgorde waarin de robots acties gesimuleerd worden is onbepaald. 
- \item[statish] Ja, in het geval van de uitdagind om een vierkant te maken is er geen verandering aan de wereld terwijl onze agenten nadenken. Echter de robocom wereld is zeker niet statisch wanneer er andere niet door ons geschreven agenten in geplaatst worden.
+ \item[statisch] Ja, in het geval van de uitdaging om een vierkant te maken is er geen verandering aan de wereld terwijl onze agenten nadenken. Echter de robocom wereld is zeker niet statisch wanneer er andere niet door ons geschreven agenten in geplaatst worden.
  \item[obeserveerbaar] slechts deels, voor een enkele agent is alleen zichtbaar wat er op dat moment recht voor de agent staat.
 
- \item[multi-agent] Ja, we werken immers vanaf het begin met meer dan 1 agent, wel cooperatief.
+ \item[multi-agent] Ja, we werken immers vanaf het begin met meer dan 1 agent, wel coöperatief.
  \item[discreet] Elke actie kost een vast aantal tiks, alle agenten worden elke tik een stap verder gesimuleerd. Dus volledig discreet.
- \item[episodish] Nee, wanneer het vierkant gevormd is zijn we klaar.
+ \item[episodisch] Nee, wanneer het vierkant gevormd is zijn we klaar.
 \end{description}
 
 
 \section{Methode}
 
-Om een vierkant te kunnen krijgen bestaand uit twee kleuren starten we met twee robots. Hoe bepalen we welke kleur de binnenkant en buitenkant worden? We hebben geen instructie met een willekeurige uitkomst nog kunnen we van te voren bepalen welke robot het midden word. Er zijn echter wel willekeurige elementen in het spel. De startpositie en orientatie is elke keer anders en
+Om een vierkant te kunnen krijgen bestaand uit twee kleuren starten we met twee robots. Hoe bepalen we welke kleur de binnenkant en buitenkant worden? We hebben geen instructie met een willekeurige uitkomst nog kunnen we van te voren bepalen welke robot het midden word. Er zijn echter wel willekeurige elementen in het spel. De startpositie en oriëntatie is elke keer anders en
 
  de volgorde waarin de tiks gesimuleerd worden is willekeurig. We gebruiken dit laatste. Als twee robots elkaar uit proberen te schakelen op hetzelfde tijdstip in de simulatie slaagt degene waarvan de laatste tick van de uitschakel operatie als eerst gesimuleerd word. Dit gebruiken we om te bepalen welke kleur het midden van het vierkant word.
 
 \label{lijnen}
-Met een verdeling tussen binnenkant en buitenkant kunnen we een procedure schrijven die vanuit een vaste positie altijd een vierkant vormt. Echter we hebben geen vaste start positie maar een willekeurige, hoe krijgen we de verschillende kleuren robots naar een vaste positie zodat we een vierkant kunnen vormen? En een vervolg vraag, wat is een positie? Immer we spelen op een randloos bord zonder herkenningspunten. We definieren de positie als relatief tot de andere kleur. Zo gedefineerd krijgen we de vraag: hoe zorgen we dat de verschillend gekleurde robots elkaar binnen een beperkte tijd vinden? De robots over het bord bewegen werkt niet altijd, richt ze parallel en ze zullen elkaar nooit vinden hoe ingewikkeld zo ook bewegen. Laat de robots een rechte lijn maken door telkens een cloon voor zich te plaatsen en ze vinden elkaar wel indien de start orientatie orthogonaal was.
+Met een verdeling tussen binnenkant en buitenkant kunnen we een procedure schrijven die vanuit een vaste positie altijd een vierkant vormt. Echter we hebben geen vaste start positie maar een willekeurige, hoe krijgen we de verschillende kleuren robots naar een vaste positie zodat we een vierkant kunnen vormen? En een vervolg vraag, wat is een positie? Immer we spelen op een rand loos bord zonder herkenningspunten. We definiëren de positie als relatief tot de andere kleur. Zo gedefinieerd krijgen we de vraag: hoe zorgen we dat de verschillend gekleurde robots elkaar binnen een beperkte tijd vinden? De robots over het bord bewegen werkt niet altijd, richt ze parallel en ze zullen elkaar nooit vinden hoe ingewikkeld zo ook bewegen. Laat de robots een rechte lijn maken door telkens een kloon voor zich te plaatsen en ze vinden elkaar wel indien de start oriëntatie orthogonaal was zoals in \ref{fig:0a}. 
 
-//TODO voorbeeld plaatje orthogonale start => gevonden
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{orthogonaal.png}
+  \caption{Kleuren vinden elkaar na een orthogonale start.}
+  \label{fig:0a}
+\end{figure}
 
-Dit werkt niet wanneer de start orientatie parallel is. Dit lossen we op door de robots nog een lijn haaks op de al bestaande te laten maken. Die lijn is namelijk gegarandeerd orthogonaal op de eerste lijn van de andere kleur. 
+Dit werkt niet wanneer de start oriëntatie parallel is (zie \ref{fig:0b}). Dit lossen we op door de robots nog een lijn haaks op de al bestaande te laten maken. Die lijn is namelijk gegarandeerd orthogonaal op de eerste lijn van de andere kleur. 
 
-//TODO voorbeeld plaatje paralelle start => gevonden
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.3\linewidth]{parallel.png}
+  \caption{Kleuren vinden zichzelf na een parallelle start, daarna draaien ze voordat ze weer verder een lijn maken.}
+  \label{fig:0b}
+\end{figure}
 
-Wanneer de lijn de robots van een andere kleur bereikt heeft verwijderen we de hele lijn tot naast de andere kleur. De andere kleur krijgt de opdracht hun lijnen ook te verwijderen. We defineren verder twee richtingen in de lijnen, upstream en downstream. Upstream is richting de eerste robot/eerder geplaatste robots, downstream tegenovergesteld.
+Wanneer de lijn de robots van een andere kleur bereikt heeft verwijderen we de hele lijn tot naast de andere kleur. De andere kleur krijgt de opdracht hun lijnen ook te verwijderen. We definieren verder twee richtingen in de lijnen, upstream en downstream. Upstream is richting de eerste robot/eerder geplaatste robots, downstream tegenovergesteld.
 
 \section{Uitvoering}
 
@@ -103,13 +113,13 @@ Hier bespreken we de opzet van het programma, eerst in de volgorde waarmee het b
 We beginnen met het laatste probleem uit de methode, hoe de robots elkaar vinden. Elke nieuw gecreerde robot, elke nieuw stuk van lijnen \ref{lijnen} begint bij de code in bank 1:
 
 \begin{verbatim}
-  Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
+  Scan #1           ;kijk op er een robot voor ons staat, sla op in Reg 1
   comp #1, 0        ;is het veld voor ons leeg?
   bJump 3, 1        ;nee => kijk wat voor bot het is
   bJump 2, 1        ;ja => maak een bot voor ons
 \end{verbatim}
 
-We zien hier dat er of verder word gewerkt aan de rechte lijn of gekeken word welke kleur voor de robot staat. Immers kan het zijn dat de lijn terug bij het begin is of dat de andere kleur gevonden is. Met de andere kleur gevonden word de robot die als eerst de ander deactiveert (ookwel master) de buitenkant van het vierkant. //TODO define slave
+We zien hier dat er of verder word gewerkt aan de rechte lijn of gekeken word welke kleur voor de robot staat. Immers kan het zijn dat de lijn terug bij het begin is of dat de andere kleur gevonden is. Met de andere kleur gevonden word de robot die als eerst de ander deactiveert (ook wel master) de buitenkant van het vierkant. De nu gedeactiveerde robot noemen we verder de slave.
 
 \subsection{opruimen}
 Het bord ligt nu echter nog vol met lijnen deze ruimen we eerst op: de slave en master draaien een rondje, indien er tijdens het rondje een robot van dezelfde kleur voor ze staat geven ze die het "Destroy\_upstream" programma:
@@ -122,10 +132,10 @@ Bank Destroy_upstream ;bank 5
   Die
 \end{verbatim}
 
-Dit laat elke robot zich omdaaien, dit programma programma in bank 1 van de robot tegenover zich zetten en dan zichzelf verwijderen. Zo blijft uiteindelijk alleen voorste node over. Een variant hierop word voor het rondje gestart als er een bot met dezelfde kleur voor de robot staat. Bij deze variant word niet rondgedraaid. Dit zorgt dat een slave in het midden van een lijn geisoleerd word zodat deze niet later door het Destroy\_upstream programma opgeruimd word.
+Dit laat elke robot zich omdaaien, dit programma programma in bank 1 van de robot tegenover zich zetten en dan zichzelf verwijderen. Zo blijft uiteindelijk alleen voorste node over. Een variant hierop word voor het rondje gestart als er een bot met dezelfde kleur voor de robot staat. Bij deze variant word niet rondgedraaid. Dit zorgt dat een slave in het midden van een lijn geïsoleerd word zodat deze niet later door het Destroy\_upstream programma opgeruimd word.
 
 \subsection{vierkant maken}
-Nu rest slechts het af maken van het vierkant. Op dit punt zijn er altijd minstens 1 master-slave pair over waarbij de master 90 graden van de slave weg gedraaid georienteerd is. De master maakt een simpele bouw robot en geeft die het make\_circle programma. Daarna draaid de master zich om en activeert deze alles wat langs komt.
+Nu rest slechts het af maken van het vierkant. Op dit punt zijn er altijd minstens 1 master-slave pair over waarbij de master 90 graden van de slave weg gedraaid georiënteerd is. De master maakt een simpele bouw robot en geeft die het make\_circle programma. Daarna draait de master zich om en activeert deze alles wat langs komt.
 
 
 \begin{verbatim}
@@ -156,9 +166,9 @@ Bank make_circle ;bank 8
 Het make\_circle programma werkt als volgt: indien er rechts niet de slave robot ligt zijn we op een hoekpunt van het vierkant dan moeten we naar binnen draaien voor we weer een bouw robot maken. Anders bouwen we een nieuwe bouw robot recht voor ons. Wanneer we weer naast de master staan is het vierkant compleet, voordat we nog een bouw robot kunnen maken worden we door de master ge-deactiveerd. Nu zijn alle robots klaar en staat er minstens 1 vierkant.
 
 \subsection{details}
-De beschrijving hierboven slaat wat kleine maar belangerijke details over. Hier staan we daar kort bij stil. Na het bouwen van het volgende stukje van de lijn blijft de robot actief op de 5e regel van de eerste bank. Bij het weer verwijderen van de lijn kopieren we de verwijder functie vanuit een andere robot naar bank 1. Deze begint daardoor te draaien vanaf regel 5. Daarom start de verwijder functie code pas op regel 5.
+De beschrijving hierboven slaat wat kleine maar belangrijke details over. Hier staan we daar kort bij stil. Na het bouwen van het volgende stukje van de lijn blijft de robot actief op de 5e regel van de eerste bank. Bij het weer verwijderen van de lijn kopiëren we de verwijder functie vanuit een andere robot naar bank 1. Deze begint daardoor te draaien vanaf regel 5. Daarom start de verwijder functie code pas op regel 5.
 
-Bij het upstream verwijderen draait de robot zich telkens 180 graden om alvoren het programma verder te kopieeren en zichzelf te verwijderen. Echter indien we bij vanuit de orthogonale 2e gemaakte lijn de 1e lijn moeten gaan verwijderen liggen de oude robots niet achter ons maar links en rechts. Zie robot Z, die naar boven georienteerd staat hieronder:
+Bij het upstream verwijderen draait de robot zich telkens 180 graden om alvorens het programma verder te kopiëren en zichzelf te verwijderen. Echter indien we bij vanuit de orthogonale 2e gemaakte lijn de 1e lijn moeten gaan verwijderen liggen de oude robots niet achter ons maar links en rechts. Zie robot Z, die naar boven georiënteerd staat hieronder:
 
 \begin{verbatim}
    Y
@@ -166,7 +176,7 @@ Bij het upstream verwijderen draait de robot zich telkens 180 graden om alvoren 
  XXZXX
 \end{verbatim}
 
-Dit lossen we op door voor het draaien te kijken of dit onderdeel van de lijn gedraait is. Bij het aanleggen van een lijn zetten we een register op 1 wanneer gedraaid word. Indien gedraait is word geen 180 graden gedraaid maar 90 tegen de orginele draairichting in.
+Dit lossen we op door voor het draaien te kijken of dit onderdeel van de lijn gedraaid is. Bij het aanleggen van een lijn zetten we een register op 1 wanneer gedraaid word. Indien gedraaid is word geen 180 graden gedraaid maar 90 tegen de originele draairichting in.
 
 Het opruimen van alle lijnen kost tijd, wanneer we direct nadat de master klaar is met Destroy\_Same\_Color het vierkant maken kan het vierkant mee verwijderd worden. Dus wachten we eerst met een simpele while loop: 
 
@@ -178,41 +188,67 @@ Het opruimen van alle lijnen kost tijd, wanneer we direct nadat de master klaar 
   Jump @while_loop                  ;nee -> terug naar boven
 \end{verbatim}
 
-actieve bank? //FIXME wat bedoel ik hier?
-
 \pagebreak
 
 \section{Resultaten} 
 
-In veel gevallen word een vierkant bereikt wanneer twee robots geplaatst worden. Echter soms word een lijn niet juist verwijderd, deze ziet de andere kleur van het buitenste vierkant als centrum en gaat hier omheen zo vormt een 5x5 vierkant als in figuur \ref{fig:1}
+In meer dan 90\% van de gevallen word een of meer vierkanten bereikt wanneer twee robots geplaatst worden. We krijgen twee vierkanten, zie figuur \ref{fig:1} voor hoe deze ontstaan. In 10\% van de andere gevallen blijft maar 1 robot over.  
 
 \begin{figure}[h!]
   \centering
   \begin{subfigure}[b]{0.4\linewidth}
-    \includegraphics[width=\linewidth]{fout1.png}
-    \caption{Een 5x5 vierkant}
+    \includegraphics[width=\linewidth]{word2.png}
+    \caption{De twee kleuren vinden elkaar op 2 locaties}
   \end{subfigure}
   \begin{subfigure}[b]{0.4\linewidth}
-    \includegraphics[width=\linewidth]{coffee.jpg}
-    \caption{More coffee.}
+    \includegraphics[width=\linewidth]{2.png}
+    \caption{Het resultaat van links}
   \end{subfigure}
-  \caption{The same cup of coffee. Two times.}
+  \caption{Twee twee kleurige vierkanten.}
+  \label{fig:1}
+\end{figure}
+
+Wanneer we starten met drie robots kunnen de resultaten globaal in 4 catogorieen ingedeeld worden:
+
+\begin{description}
+ \item[Time out] Er vormt een vierkant van 2 kleuren, de overige kleur blijft draaien tot deze het bestaande vierkant vind maar dit lukt niet op tijd \ref{fig:drie1}.
+ \item[Gemengd] Er ontstaat een mislukt vierkant uit meerdere kleuren omdat meerdere robots master worden of een vierkant nog niet af was terwijl de volgende lijn raakte.\ref{fig:drie3} \ref{fig:drie_fout}.
+ \item[geluk] Er ontstaat een vierkant van 2 kleuren en dit word daarna pas geraakt door een lijn van de derde kleur wanneer het helemaal af is \ref{fig:drie_geluk}.
+\end{description}
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{drie1.png}
+    \caption{Time out} \label{fig:drie1}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{drie3.png}
+    \caption{Gemengd, meerdere masters} \label{fig:drie3}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{drie_fout.png}
+    \caption{Gemengt, 3e lijn op niet af vierkant} \label{fig:drie_fout}
+  \end{subfigure}
+    \begin{subfigure}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{drie_geluk.png}
+    \caption{Een 5x5 vierkant} \label{fig:drie_geluk}
+  \end{subfigure}
+  \caption{Vier pogingen om een 3 kleurig vierkant te krijgen.}
   \label{fig:coffee}
 \end{figure}
 
-
-
 \section{Conclusie}
+Wanneer er geen vierkant ontstaat is dit terug te brengen tot een startsituatie waardoor de robots net verkeerd elkaar vinden. Door deze te bestuderen kan het programma subtiel aangepast worden om hier rekening mee te houden. Het nadeel is dat dit veel tijd kost, niet alleen om te maken maar ook de run-time van het programma neemt toe.
 
-3 lijnen dik:
--
+Bij het maken van een 3 kleurig vierkant gaat veel mis. De time-outs kunnen we voorkomen door de agent te programmeren na 2 bochten over te gaan op een minder fijnmazig zoek patroon immers is er dan al een 3x3 vierkant gezien de lijnen weg zijn. 
 
-verbeteringen:
--communicatie voor deleten en circle maken
--functie achtig voor minder code en abstractie
+Door de robots die de lijnen vormen informatie door te laten geven kan een globale staat gemaakt worden waarmee bepaald kan worden of alle kleuren in contact zijn en waar. Zo kunnen dubbele vierkanten voorkomen worden en beter gecoördineerd worden voor het 3 kleurige vierkant. Dit word waarschijnlijk zeer complex.
+
+Om meer complex gedrag te kunnen implementeren is een hoger niveau van abstractie nodig. We kunnen functies implementeren door registers aan te wijzen als return registers en als registers voor argumenten. Dit maakt code reuse mogelijk en complexer gedrag.
 
 \bibliography{verslag.bib}
-\bibliographystyle{ieeetr}
+\bibliographystyle{IEEEtran}
 
 \pagebreak
 \section*{Appendix: Code}
@@ -235,7 +271,7 @@ Published  OptionSet   RC3 Standards            ; Recommended OptionSet
 ;reg 1: stores scan result
 ;reg 5: did we turn left
 ;reg 20: are we master?
-;reg 19: are we slave?
+;reg 10: loop counter
 
 Bank Main           ;bank 1
   Scan #1           ;kijk op er een robot voor ons staat, sla op in reg 1
@@ -313,6 +349,13 @@ Bank Destroy_downstream ;bank 6
   Die
   
 Bank Destroy_Same_Color ;bank 7
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  Jump @scan1           ;make sure then real code start at 5, since standby runs at 5
+  
+  @scan1
   Scan #1
   comp #1, 2        ;bot met zelfde kleur?
   Jump @scan2       ;nee -> draai en scan nog 3 maal
@@ -340,9 +383,20 @@ Bank Destroy_Same_Color ;bank 7
   Trans 5, 1                        ;ja -> transfer destroy upstream program 
   @done_turning
   
-  comp #20, 1                       ;bot master?
+  comp #20, 0                       ;bot slave?
+  bJump 8, @start_building          ;nee -> maak circle
+  comp #10, 0                       ;ja -> first loop?
   Set #Active, 0                    ;nee -> doe niks meer
-  bJump 8, @start_building          ;ja -> maak circle
+  
+  Set #10, 1000
+  @while_loop2
+  sub #10, 1
+  comp #10, 0                       ;klaar met loop?
+  Jump @while_loop2                  ;nee -> terug naar boven
+  
+  Set #10, 1                        ;ja -> wacht en doe dit nog een keer
+  jump @scan1                       ;ja -> wacht en doe dit nog een keer
+  
 
 Bank make_circle ;bank 8
   ;look whats right
@@ -369,7 +423,7 @@ Bank make_circle ;bank 8
   
   @start_building
   ;wait for all robots around us to get destroyed
-  Set #10, 300
+  Set #10, 3000
   @while_loop
   sub #10, 1
   comp #10, 0                       ;klaar met loop?
